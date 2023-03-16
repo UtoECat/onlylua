@@ -131,6 +131,10 @@ typedef struct CallInfo {
 #define getoah(st)	((st) & CIST_OAH)
 
 
+#ifdef LUA_GC_PROFILER
+
+#endif
+
 /*
 ** 'global state', shared by all threads of this state
 */

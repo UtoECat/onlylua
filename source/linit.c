@@ -26,12 +26,6 @@
 
 // helper functions
 
-static const char* idxtostr(lua_State* L, int i) {
-	const char* c = lua_tolstring(L, i, NULL);
-	if (!c) c = "(?)"; //lua_typename(lua_type(L, i));
-	return c;
-}
-
 static int addstackinfo(lua_State* L, int level) {
 	lua_Debug ar;
   if (lua_getstack(L, level, &ar)) {
@@ -64,7 +58,7 @@ static void typecheck(lua_State* L, int arg, int t) {
 // so.. let's add ours functions
 
 static int Btostring(lua_State* L) {
-	lua_pushstring(L, idxtostr(L, 1));
+	lua_pushstring(L, lua_anytostring(L, 1));
 	return 1;
 }
 
@@ -179,7 +173,7 @@ static int Bpairs(lua_State* L) {
 }
 
 static int lua_loadbuffer(lua_State* L, const char* s, size_t len) {
-	return lua_loadbufferx(L, s, len, "CAPI", "t");
+	return lua_loadbufferx(L, s, len, "loadstring", "t");
 }
 
 static int Bloadstring(lua_State* L) {
@@ -236,7 +230,6 @@ static struct funcentry functions[] = {
 	{"getmetatable", Bgetmeta},
 	{"error",        Berror},
 	{"pcall",        Bpcall},
-	{"print",        Bprint},
 	{"next",         Bnext},
 	{"type",         Btype},
 	{"tonumber",     Btonumber},
@@ -259,7 +252,7 @@ LUALIB_API int luaopen_base (lua_State *L) {
 	};
 
 	lua_pushvalue(L, LUA_REGISTRYINDEX);
-	lua_getfield(L, -1, LUA_RIDX_GLOBALS);
+	lua_geti(L, -1, LUA_RIDX_GLOBALS);
 	lua_setglobal(L, "_G");
 	lua_pop(L, 1);
 	lua_pushfstring(L, "Lua %s.%s", LUA_VERSION_MAJOR, LUA_VERSION_MINOR);

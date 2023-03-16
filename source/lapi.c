@@ -387,6 +387,68 @@ LUA_API const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
   return svalue(o);
 }
 
+// EXTENSION (by UtoECat, of cource :D)
+#include <stdio.h>
+LUA_API const char *lua_anytostring (lua_State *L, int idx) {
+  StkId o = index2addr(L, idx);
+	if (ttisstring(o) || cvt2str(o)) return lua_tolstring(L, idx, NULL);
+
+	// else try custom conversion
+	char buff[256] = {0};
+	size_t len = 0;
+	const void* ptr = lua_topointer(L, idx);
+	const char* c = NULL;
+
+	if (ptr) { // can be represented as object
+		// check __name metamethod
+		Table *mt = NULL;
+		int t = ttnov(o);
+		switch (t) {
+   	 case LUA_TTABLE:
+				mt = hvalue(o)->metatable;
+				break;
+    	case LUA_TUSERDATA:
+				mt = uvalue(o)->metatable;
+				break;
+			default: break;
+		};
+
+		// has metatable
+		if (mt) {
+			lua_lock(L);
+			TString *str = luaS_new(L, "__name");
+			const TValue* o2 = luaH_getstr(mt, str);
+			if (ttisstring(o2)) c = svalue(o2);
+			lua_unlock(L);
+		};
+
+		// has no name metafield?
+		if (!c) c = ttypename(t);
+
+		len = strlen(c); // first buffer entry
+		if (len > 200) len = 200;
+		memcpy(buff, c, len);
+		
+		buff[len++] = ' ';
+		buff[len++] = '(';
+  	len += lua_pointer2str(buff+len, 254-len, ptr); // leave one char
+		buff[len++] = ')';
+	} else if (ttisboolean(o)) {
+		// override typename
+		int v = !l_isfalse(o);
+		c = v ? "true" : "false";
+		len = v ? 4 : 5;
+		memcpy(buff, c, len);
+	} else return NULL; // error :/
+
+	// nothing should rellocate stack here...
+	lua_lock(L);
+	setsvalue2s(L, o, luaS_newlstr(L, buff, len));
+	luaC_checkGC(L);
+	lua_unlock(L);
+	return svalue(o);
+}
+
 
 LUA_API size_t lua_rawlen (lua_State *L, int idx) {
   StkId o = index2addr(L, idx);

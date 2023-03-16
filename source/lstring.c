@@ -113,6 +113,12 @@ void luaS_clearcache (global_State *g) {
 /*
 ** Initialize the string table and the string cache
 */
+
+#define EXTRA_FIXED_NUM 3
+static const char* extra_fixed[] = {
+	"__name", "__metatable", "__pairs"
+};
+
 void luaS_init (lua_State *L) {
   global_State *g = G(L);
   int i, j;
@@ -123,9 +129,10 @@ void luaS_init (lua_State *L) {
   for (i = 0; i < STRCACHE_N; i++)  /* fill cache with valid strings */
     for (j = 0; j < STRCACHE_M; j++)
       g->strcache[i][j] = g->memerrmsg;
+	// create other kinds of fixed strings :)
+	for (i = 0; i < EXTRA_FIXED_NUM; i++)
+		luaC_fix(L, obj2gco(luaS_new(L, extra_fixed[i])));
 }
-
-
 
 /*
 ** creates a new string object

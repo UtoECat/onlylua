@@ -405,6 +405,8 @@ LUA_API lua_Number      (lua_tonumberx) (lua_State *L, int idx, int *isnum);
 LUA_API lua_Integer     (lua_tointegerx) (lua_State *L, int idx, int *isnum);
 LUA_API int             (lua_toboolean) (lua_State *L, int idx);
 LUA_API const char     *(lua_tolstring) (lua_State *L, int idx, size_t *len);
+// EXTENSION
+LUA_API const char     *(lua_anytostring) (lua_State *L, int idx);
 LUA_API size_t          (lua_rawlen) (lua_State *L, int idx);
 LUA_API lua_CFunction   (lua_tocfunction) (lua_State *L, int idx);
 LUA_API void	       *(lua_touserdata) (lua_State *L, int idx);
@@ -601,5 +603,22 @@ struct lua_Debug {
   
   struct CallInfo *i_ci;  
 };
+
+#ifndef lualib_h
+#define lualib_h// include lua.h 
+
+#define LUA_VERSUFFIX          "_" LUA_VERSION_MAJOR "_" LUA_VERSION_MINOR
+
+LUAMOD_API int (luaopen_base)      (lua_State *L);
+LUAMOD_API int (luaopen_coroutine) (lua_State *L);
+LUAMOD_API int (luaopen_math)      (lua_State *L);
+
+LUALIB_API void (luaL_openlibs)    (lua_State *L);
+
+#if !defined(lua_assert)
+#define lua_assert(x)	((void)0)
+#endif
+
+#endif
 
 #endif

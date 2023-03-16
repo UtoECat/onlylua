@@ -825,6 +825,10 @@ typedef struct CallInfo {
 #define setoah(st,v)	((st) = ((st) & ~CIST_OAH) | (v))
 #define getoah(st)	((st) & CIST_OAH)
 
+#ifdef LUA_GC_PROFILER
+
+#endif
+
 typedef struct global_State {
   lua_Alloc frealloc;  
   void *ud;         
@@ -1598,6 +1602,69 @@ LUA_API const char *lua_tolstring (lua_State *L, int idx, size_t *len) {
   return svalue(o);
 }
 
+// EXTENSION (by UtoECat, of cource :D)
+#include <stdio.h>
+
+LUA_API const char *lua_anytostring (lua_State *L, int idx) {
+  StkId o = index2addr(L, idx);
+	if (ttisstring(o) || cvt2str(o)) return lua_tolstring(L, idx, NULL);
+
+	// else try custom conversion
+	char buff[256] = {0};
+	size_t len = 0;
+	const void* ptr = lua_topointer(L, idx);
+	const char* c = NULL;
+
+	if (ptr) { // can be represented as object
+		// check __name metamethod
+		Table *mt = NULL;
+		int t = ttnov(o);
+		switch (t) {
+   	 case LUA_TTABLE:
+				mt = hvalue(o)->metatable;
+				break;
+    	case LUA_TUSERDATA:
+				mt = uvalue(o)->metatable;
+				break;
+			default: break;
+		};
+
+		// has metatable
+		if (mt) {
+			lua_lock(L);
+			TString *str = luaS_new(L, "__name");
+			const TValue* o2 = luaH_getstr(mt, str);
+			if (ttisstring(o2)) c = svalue(o2);
+			lua_unlock(L);
+		};
+
+		// has no name metafield?
+		if (!c) c = ttypename(t);
+
+		len = strlen(c); // first buffer entry
+		if (len > 200) len = 200;
+		memcpy(buff, c, len);
+		
+		buff[len++] = ' ';
+		buff[len++] = '(';
+  	len += lua_pointer2str(buff+len, 254-len, ptr); // leave one char
+		buff[len++] = ')';
+	} else if (ttisboolean(o)) {
+		// override typename
+		int v = !l_isfalse(o);
+		c = v ? "true" : "false";
+		len = v ? 4 : 5;
+		memcpy(buff, c, len);
+	} else return NULL; // error :/
+
+	// nothing should rellocate stack here...
+	lua_lock(L);
+	setsvalue2s(L, o, luaS_newlstr(L, buff, len));
+	luaC_checkGC(L);
+	lua_unlock(L);
+	return svalue(o);
+}
+
 LUA_API size_t lua_rawlen (lua_State *L, int idx) {
   StkId o = index2addr(L, idx);
   switch (ttype(o)) {
@@ -2151,7 +2218,7 @@ struct lSS {
 };
 
 static const char* __strit (lua_State*, void* ud, size_t* sz) {
-	lSS *ls = (lSS*) ud;
+	struct lSS *ls = (struct lSS*) ud;
 	if (ls->l == 0) return NULL;
 	*sz = ls->l; ls->l = 0;
 	return ls->s;
@@ -2862,7 +2929,7 @@ static int tonumeral(const expdesc *e, TValue *v) {
   }
 }
 
-void luaK_nil (FuncState *fs, int from, int n) {
+LUAI_FUNC void luaK_nil (FuncState *fs, int from, int n) {
   Instruction *previous;
   int l = from + n - 1;  
   if (fs->pc > fs->lasttarget) {  
@@ -2900,7 +2967,7 @@ static void fixjump (FuncState *fs, int pc, int dest) {
   SETARG_sBx(*jmp, offset);
 }
 
-void luaK_concat (FuncState *fs, int *l1, int l2) {
+LUAI_FUNC void luaK_concat (FuncState *fs, int *l1, int l2) {
   if (l2 == NO_JUMP) return;  
   else if (*l1 == NO_JUMP)  
     *l1 = l2;  
@@ -2913,7 +2980,7 @@ void luaK_concat (FuncState *fs, int *l1, int l2) {
   }
 }
 
-int luaK_jump (FuncState *fs) {
+LUAI_FUNC int luaK_jump (FuncState *fs) {
   int jpc = fs->jpc;  
   int j;
   fs->jpc = NO_JUMP;  
@@ -2922,7 +2989,7 @@ int luaK_jump (FuncState *fs) {
   return j;
 }
 
-void luaK_ret (FuncState *fs, int first, int nret) {
+LUAI_FUNC void luaK_ret (FuncState *fs, int first, int nret) {
   luaK_codeABC(fs, OP_RETURN, first, nret+1, 0);
 }
 
@@ -2931,7 +2998,7 @@ static int condjump (FuncState *fs, OpCode op, int A, int B, int C) {
   return luaK_jump(fs);
 }
 
-int luaK_getlabel (FuncState *fs) {
+LUAI_FUNC int luaK_getlabel (FuncState *fs) {
   fs->lasttarget = fs->pc;
   return fs->pc;
 }
@@ -2979,12 +3046,12 @@ static void dischargejpc (FuncState *fs) {
   fs->jpc = NO_JUMP;
 }
 
-void luaK_patchtohere (FuncState *fs, int list) {
+LUAI_FUNC void luaK_patchtohere (FuncState *fs, int list) {
   luaK_getlabel(fs);  
   luaK_concat(fs, &fs->jpc, list);
 }
 
-void luaK_patchlist (FuncState *fs, int list, int target) {
+LUAI_FUNC void luaK_patchlist (FuncState *fs, int list, int target) {
   if (target == fs->pc)  
     luaK_patchtohere(fs, list);  
   else {
@@ -2993,7 +3060,7 @@ void luaK_patchlist (FuncState *fs, int list, int target) {
   }
 }
 
-void luaK_patchclose (FuncState *fs, int list, int level) {
+LUAI_FUNC void luaK_patchclose (FuncState *fs, int list, int level) {
   level++;  
   for (; list != NO_JUMP; list = getjump(fs, list)) {
     lua_assert(GET_OPCODE(fs->f->code[list]) == OP_JMP &&
@@ -3017,7 +3084,7 @@ static int luaK_code (FuncState *fs, Instruction i) {
   return fs->pc++;
 }
 
-int luaK_codeABC (FuncState *fs, OpCode o, int a, int b, int c) {
+LUAI_FUNC int luaK_codeABC (FuncState *fs, OpCode o, int a, int b, int c) {
   lua_assert(getOpMode(o) == iABC);
   lua_assert(getBMode(o) != OpArgN || b == 0);
   lua_assert(getCMode(o) != OpArgN || c == 0);
@@ -3025,7 +3092,7 @@ int luaK_codeABC (FuncState *fs, OpCode o, int a, int b, int c) {
   return luaK_code(fs, CREATE_ABC(o, a, b, c));
 }
 
-int luaK_codeABx (FuncState *fs, OpCode o, int a, unsigned int bc) {
+LUAI_FUNC int luaK_codeABx (FuncState *fs, OpCode o, int a, unsigned int bc) {
   lua_assert(getOpMode(o) == iABx || getOpMode(o) == iAsBx);
   lua_assert(getCMode(o) == OpArgN);
   lua_assert(a <= MAXARG_A && bc <= MAXARG_Bx);
@@ -3037,7 +3104,7 @@ static int codeextraarg (FuncState *fs, int a) {
   return luaK_code(fs, CREATE_Ax(OP_EXTRAARG, a));
 }
 
-int luaK_codek (FuncState *fs, int reg, int k) {
+LUAI_FUNC int luaK_codek (FuncState *fs, int reg, int k) {
   if (k <= MAXARG_Bx)
     return luaK_codeABx(fs, OP_LOADK, reg, k);
   else {
@@ -3047,7 +3114,7 @@ int luaK_codek (FuncState *fs, int reg, int k) {
   }
 }
 
-void luaK_checkstack (FuncState *fs, int n) {
+LUAI_FUNC void luaK_checkstack (FuncState *fs, int n) {
   int newstack = fs->freereg + n;
   if (newstack > fs->f->maxstacksize) {
     if (newstack >= MAXREGS)
@@ -3057,7 +3124,7 @@ void luaK_checkstack (FuncState *fs, int n) {
   }
 }
 
-void luaK_reserveregs (FuncState *fs, int n) {
+LUAI_FUNC void luaK_reserveregs (FuncState *fs, int n) {
   luaK_checkstack(fs, n);
   fs->freereg += n;
 }
@@ -3112,13 +3179,13 @@ static int addk (FuncState *fs, TValue *key, TValue *v) {
   return k;
 }
 
-int luaK_stringK (FuncState *fs, TString *s) {
+LUAI_FUNC int luaK_stringK (FuncState *fs, TString *s) {
   TValue o;
   setsvalue(fs->ls->L, &o, s);
   return addk(fs, &o, &o);  
 }
 
-int luaK_intK (FuncState *fs, lua_Integer n) {
+LUAI_FUNC int luaK_intK (FuncState *fs, lua_Integer n) {
   TValue k, o;
   setpvalue(&k, cast(void*, cast(size_t, n)));
   setivalue(&o, n);
@@ -3145,7 +3212,7 @@ static int nilK (FuncState *fs) {
   return addk(fs, &k, &v);
 }
 
-void luaK_setreturns (FuncState *fs, expdesc *e, int nresults) {
+LUAI_FUNC void luaK_setreturns (FuncState *fs, expdesc *e, int nresults) {
   if (e->k == VCALL) {  
     SETARG_C(getinstruction(fs, e), nresults + 1);
   }
@@ -3158,7 +3225,7 @@ void luaK_setreturns (FuncState *fs, expdesc *e, int nresults) {
   else lua_assert(nresults == LUA_MULTRET);
 }
 
-void luaK_setoneret (FuncState *fs, expdesc *e) {
+LUAI_FUNC void luaK_setoneret (FuncState *fs, expdesc *e) {
   if (e->k == VCALL) {  
     
     lua_assert(GETARG_C(getinstruction(fs, e)) == 2);
@@ -3171,7 +3238,7 @@ void luaK_setoneret (FuncState *fs, expdesc *e) {
   }
 }
 
-void luaK_dischargevars (FuncState *fs, expdesc *e) {
+LUAI_FUNC void luaK_dischargevars (FuncState *fs, expdesc *e) {
   switch (e->k) {
     case VLOCAL: {  
       e->k = VNONRELOC;  
@@ -3290,14 +3357,14 @@ static void exp2reg (FuncState *fs, expdesc *e, int reg) {
   e->k = VNONRELOC;
 }
 
-void luaK_exp2nextreg (FuncState *fs, expdesc *e) {
+LUAI_FUNC void luaK_exp2nextreg (FuncState *fs, expdesc *e) {
   luaK_dischargevars(fs, e);
   freeexp(fs, e);
   luaK_reserveregs(fs, 1);
   exp2reg(fs, e, fs->freereg - 1);
 }
 
-int luaK_exp2anyreg (FuncState *fs, expdesc *e) {
+LUAI_FUNC int luaK_exp2anyreg (FuncState *fs, expdesc *e) {
   luaK_dischargevars(fs, e);
   if (e->k == VNONRELOC) {  
     if (!hasjumps(e))  
@@ -3311,19 +3378,19 @@ int luaK_exp2anyreg (FuncState *fs, expdesc *e) {
   return e->u.info;
 }
 
-void luaK_exp2anyregup (FuncState *fs, expdesc *e) {
+LUAI_FUNC void luaK_exp2anyregup (FuncState *fs, expdesc *e) {
   if (e->k != VUPVAL || hasjumps(e))
     luaK_exp2anyreg(fs, e);
 }
 
-void luaK_exp2val (FuncState *fs, expdesc *e) {
+LUAI_FUNC void luaK_exp2val (FuncState *fs, expdesc *e) {
   if (hasjumps(e))
     luaK_exp2anyreg(fs, e);
   else
     luaK_dischargevars(fs, e);
 }
 
-int luaK_exp2RK (FuncState *fs, expdesc *e) {
+LUAI_FUNC int luaK_exp2RK (FuncState *fs, expdesc *e) {
   luaK_exp2val(fs, e);
   switch (e->k) {  
     case VTRUE: e->u.info = boolK(fs, 1); goto vk;
@@ -3343,7 +3410,7 @@ int luaK_exp2RK (FuncState *fs, expdesc *e) {
   return luaK_exp2anyreg(fs, e);
 }
 
-void luaK_storevar (FuncState *fs, expdesc *var, expdesc *ex) {
+LUAI_FUNC void luaK_storevar (FuncState *fs, expdesc *var, expdesc *ex) {
   switch (var->k) {
     case VLOCAL: {
       freeexp(fs, ex);
@@ -3366,7 +3433,7 @@ void luaK_storevar (FuncState *fs, expdesc *var, expdesc *ex) {
   freeexp(fs, ex);
 }
 
-void luaK_self (FuncState *fs, expdesc *e, expdesc *key) {
+LUAI_FUNC void luaK_self (FuncState *fs, expdesc *e, expdesc *key) {
   int ereg;
   luaK_exp2anyreg(fs, e);
   ereg = e->u.info;  
@@ -3399,7 +3466,7 @@ static int jumponcond (FuncState *fs, expdesc *e, int cond) {
   return condjump(fs, OP_TESTSET, NO_REG, e->u.info, cond);
 }
 
-void luaK_goiftrue (FuncState *fs, expdesc *e) {
+LUAI_FUNC void luaK_goiftrue (FuncState *fs, expdesc *e) {
   int pc;  
   luaK_dischargevars(fs, e);
   switch (e->k) {
@@ -3422,7 +3489,7 @@ void luaK_goiftrue (FuncState *fs, expdesc *e) {
   e->t = NO_JUMP;
 }
 
-void luaK_goiffalse (FuncState *fs, expdesc *e) {
+LUAI_FUNC void luaK_goiffalse (FuncState *fs, expdesc *e) {
   int pc;  
   luaK_dischargevars(fs, e);
   switch (e->k) {
@@ -3475,7 +3542,7 @@ static void codenot (FuncState *fs, expdesc *e) {
   removevalues(fs, e->t);
 }
 
-void luaK_indexed (FuncState *fs, expdesc *t, expdesc *k) {
+LUAI_FUNC void luaK_indexed (FuncState *fs, expdesc *t, expdesc *k) {
   lua_assert(!hasjumps(t) && (vkisinreg(t->k) || t->k == VUPVAL));
   t->u.ind.t = t->u.info;  
   t->u.ind.idx = luaK_exp2RK(fs, k);  
@@ -3498,7 +3565,8 @@ static int validop (int op, TValue *v1, TValue *v2) {
 
 static int constfolding (FuncState *fs, int op, expdesc *e1,
                                                 const expdesc *e2) {
-  TValue v1, v2, res;
+  TValue v1, v2, res = {NILCONSTANT}; // compiler warning here
+
   if (!tonumeral(e1, &v1) || !tonumeral(e2, &v2) || !validop(op, &v1, &v2))
     return 0;  
   luaO_arith(fs->ls->L, op, &v1, &v2, &res);  
@@ -3559,7 +3627,7 @@ static void codecomp (FuncState *fs, BinOpr opr, expdesc *e1, expdesc *e2) {
   e1->k = VJMP;
 }
 
-void luaK_prefix (FuncState *fs, UnOpr op, expdesc *e, int line) {
+LUAI_FUNC void luaK_prefix (FuncState *fs, UnOpr op, expdesc *e, int line) {
   static const expdesc ef = {VKINT, {0}, NO_JUMP, NO_JUMP};
   switch (op) {
     case OPR_MINUS: case OPR_BNOT:  
@@ -3574,7 +3642,7 @@ void luaK_prefix (FuncState *fs, UnOpr op, expdesc *e, int line) {
   }
 }
 
-void luaK_infix (FuncState *fs, BinOpr op, expdesc *v) {
+LUAI_FUNC void luaK_infix (FuncState *fs, BinOpr op, expdesc *v) {
   switch (op) {
     case OPR_AND: {
       luaK_goiftrue(fs, v);  
@@ -3605,7 +3673,7 @@ void luaK_infix (FuncState *fs, BinOpr op, expdesc *v) {
   }
 }
 
-void luaK_posfix (FuncState *fs, BinOpr op,
+LUAI_FUNC void luaK_posfix (FuncState *fs, BinOpr op,
                   expdesc *e1, expdesc *e2, int line) {
   switch (op) {
     case OPR_AND: {
@@ -3654,11 +3722,11 @@ void luaK_posfix (FuncState *fs, BinOpr op,
   }
 }
 
-void luaK_fixline (FuncState *fs, int line) {
+LUAI_FUNC void luaK_fixline (FuncState *fs, int line) {
   fs->f->lineinfo[fs->pc - 1] = line;
 }
 
-void luaK_setlist (FuncState *fs, int base, int nelems, int tostore) {
+LUAI_FUNC void luaK_setlist (FuncState *fs, int base, int nelems, int tostore) {
   int c =  (nelems - 1)/LFIELDS_PER_FLUSH + 1;
   int b = (tostore == LUA_MULTRET) ? 0 : tostore;
   lua_assert(tostore != 0 && tostore <= LFIELDS_PER_FLUSH);
@@ -6187,12 +6255,6 @@ void luaC_fullgc (lua_State *L, int isemergency) {
 
 // helper functions
 
-static const char* idxtostr(lua_State* L, int i) {
-	const char* c = lua_tolstring(L, i, NULL);
-	if (!c) c = "(?)"; //lua_typename(lua_type(L, i));
-	return c;
-}
-
 static int addstackinfo(lua_State* L, int level) {
 	lua_Debug ar;
   if (lua_getstack(L, level, &ar)) {
@@ -6209,28 +6271,28 @@ static int throwerr(lua_State* L, const char* s, ...) {
 	lua_pushstring(L, s);
 	va_list args;
 	va_start(args, s);
-	int s = addstackinfo(L, 1);
+	int stat = addstackinfo(L, 1);
 	lua_pushvfstring(L, s, args);
-	if (s) lua_concat(L, 2);
+	if (stat) lua_concat(L, 2);
 	va_end(args);
 	lua_error(L);
 	return 0; // unreachable
 }
 
 static void typecheck(lua_State* L, int arg, int t) {
-	if (lua_type(arg) != cond) throwerr(L, "%i : %s excepted", arg, lua_typename(L, t));
+	if (lua_type(L, arg) != t) throwerr(L, "%i : %s excepted", arg, lua_typename(L, t));
 }
 
 // we have NO ANY STANDARD LIBRARY now :D even no print() and assert()...
 // so.. let's add ours functions
 
 static int Btostring(lua_State* L) {
-	lua_pushstring(L, idxtostr(L, 1));
+	lua_pushstring(L, lua_anytostring(L, 1));
 	return 1;
 }
 
 static int Btonumber(lua_State* L) {
-	if (lua_gettop(L, 1) == 0) return 0;
+	if (lua_gettop(L) == 0) return 0;
 	int succ = 0;
 	lua_Number n = lua_tonumberx(L, 1, &succ);
 	if (!succ)
@@ -6256,17 +6318,8 @@ static int Bnext(lua_State* L) {
   }
 }
 
-static int Bprint(lua_State* L) {
-	int n = lua_gettop(L); // count
-	for (int i = 1; i <= n; i++) {
-		fprintf(stdout, "%s ", idxtostr(L, i));
-	}
-	fputc('\n', stdout);
-	return 0;
-}
-
 // continuation
-static int pcallcont(lua_State* L, int s, lua_KContext argc) {
+static int pcallcont(lua_State* L, int status, lua_KContext) {
 	if (status != LUA_OK && status != LUA_YIELD) {
 		lua_pushboolean(L, 0); lua_insert(L, 1); // status at first
 		return 2;
@@ -6312,20 +6365,20 @@ static int Bsetmeta(lua_State* L) {
 }
 
 static int Braweq(lua_State* L) {
-	if (lua_gettop(L) < 2) throwerr("2 arguments excepted!");
+	if (lua_gettop(L) < 2) throwerr(L, "2 arguments excepted!");
 	lua_pushboolean(L, lua_rawequal(L, 1, 2));
 	return 1;
 }
 
 static int Brawlen(lua_State* L) {
-	if (lua_isnoneornil(L, 1)) throwerr("#1 : table or string excepted!");
+	if (lua_isnoneornil(L, 1)) throwerr(L, "#1 : table or string excepted!");
 	lua_pushinteger(L, lua_rawlen(L, 1));
 	return 1;
 }
 
 static int Brawget(lua_State* L) {
 	typecheck(L, 1, LUA_TTABLE);
-	if (lua_isnoneornil(L, 2)) throwerr("#2: valid key excepted!");
+	if (lua_isnoneornil(L, 2)) throwerr(L, "#2: valid key excepted!");
 	lua_settop(L, 2);
 	lua_rawget(L, 1);
 	return 1;
@@ -6333,7 +6386,7 @@ static int Brawget(lua_State* L) {
 
 static int Brawset(lua_State* L) {
 	typecheck(L, 1, LUA_TTABLE);
-	if (lua_isnoneornil(L, 2)) throwerr("#2: valid key excepted!");
+	if (lua_isnoneornil(L, 2)) throwerr(L, "#2: valid key excepted!");
 	if (lua_gettop(L) < 3) lua_pushnil(L); // add third arg
 	lua_settop(L, 3);
 	lua_rawset(L, 1);
@@ -6349,13 +6402,13 @@ static int Bpairs(lua_State* L) {
 }
 
 static int lua_loadbuffer(lua_State* L, const char* s, size_t len) {
-	return lua_loadbufferx(L, __strit, &ls, "CAPI", "bt");
+	return lua_loadbufferx(L, s, len, "loadstring", "t");
 }
 
 static int Bloadstring(lua_State* L) {
 	typecheck(L, 1, LUA_TSTRING);
 	size_t len = 0;
-	char* c = lua_tolstring(L, 1, &len);
+	const char* c = lua_tolstring(L, 1, &len);
 	lua_settop(L, 1);
 	if (lua_loadbuffer(L, c, len)) lua_pushnil(L);
 	else {
@@ -6391,7 +6444,7 @@ static int Bselect(lua_State* L) {
 		return 1;
 	} else if (i < 0) i = n + i;
 	else if (i > n) i = n;
-	if (i < 1) throwerr("index is out of range");
+	if (i < 1) throwerr(L, "index is out of range");
 	return n - i;
 };
 
@@ -6406,7 +6459,6 @@ static struct funcentry functions[] = {
 	{"getmetatable", Bgetmeta},
 	{"error",        Berror},
 	{"pcall",        Bpcall},
-	{"print",        Bprint},
 	{"next",         Bnext},
 	{"type",         Btype},
 	{"tonumber",     Btonumber},
@@ -6428,8 +6480,10 @@ LUALIB_API int luaopen_base (lua_State *L) {
 		lua_setglobal(L, i->name);
 	};
 
-	lua_getglobal(L);
+	lua_pushvalue(L, LUA_REGISTRYINDEX);
+	lua_geti(L, -1, LUA_RIDX_GLOBALS);
 	lua_setglobal(L, "_G");
+	lua_pop(L, 1);
 	lua_pushfstring(L, "Lua %s.%s", LUA_VERSION_MAJOR, LUA_VERSION_MINOR);
 	lua_setglobal(L, "_VERSION");
 	return 0;
@@ -6997,8 +7051,7 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize) {
 // include locale.h 
 // include math.h 
 // include stdarg.h 
-
-#include <stdio.h>
+// include stdio.h 
 // include stdlib.h 
 // include string.h 
 // include lua.h 
@@ -9328,6 +9381,11 @@ void luaS_clearcache (global_State *g) {
     }
 }
 
+#define EXTRA_FIXED_NUM 3
+static const char* extra_fixed[] = {
+	"__name", "__metatable", "__pairs"
+};
+
 void luaS_init (lua_State *L) {
   global_State *g = G(L);
   int i, j;
@@ -9338,6 +9396,9 @@ void luaS_init (lua_State *L) {
   for (i = 0; i < STRCACHE_N; i++)  
     for (j = 0; j < STRCACHE_M; j++)
       g->strcache[i][j] = g->memerrmsg;
+	// create other kinds of fixed strings :)
+	for (i = 0; i < EXTRA_FIXED_NUM; i++)
+		luaC_fix(L, obj2gco(luaS_new(L, extra_fixed[i])));
 }
 
 static TString *createstrobj (lua_State *L, size_t l, int tag, unsigned int h) {
@@ -9970,8 +10031,6 @@ Node *luaH_mainposition (const Table *t, const TValue *key) {
 int luaH_isdummy (const Table *t) { return isdummy(t); }
 
 #endif
-
-#include <ltests.c>
 
 #define ltm_c
 #define LUA_CORE// include lprefix.h 

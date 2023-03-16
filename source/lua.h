@@ -11,9 +11,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 
-
 #include "luaconf.h"
-
 
 #define LUA_VERSION_MAJOR	"5"
 #define LUA_VERSION_MINOR	"3"
@@ -181,6 +179,8 @@ LUA_API lua_Number      (lua_tonumberx) (lua_State *L, int idx, int *isnum);
 LUA_API lua_Integer     (lua_tointegerx) (lua_State *L, int idx, int *isnum);
 LUA_API int             (lua_toboolean) (lua_State *L, int idx);
 LUA_API const char     *(lua_tolstring) (lua_State *L, int idx, size_t *len);
+// EXTENSION
+LUA_API const char     *(lua_anytostring) (lua_State *L, int idx);
 LUA_API size_t          (lua_rawlen) (lua_State *L, int idx);
 LUA_API lua_CFunction   (lua_tocfunction) (lua_State *L, int idx);
 LUA_API void	       *(lua_touserdata) (lua_State *L, int idx);
@@ -444,6 +444,7 @@ struct lua_Debug {
 
 /* }====================================================================== */
 
+#include "lualib.h"
 
 /******************************************************************************
 * Copyright (C) 1994-2020 Lua.org, PUC-Rio.
