@@ -1,5 +1,5 @@
 /*
-** $Id: lzio.h,v 1.31.1.1 2017/04/19 17:20:42 roberto Exp $
+** $Id: lzio.h $
 ** Buffered streams
 ** See Copyright Notice in lua.h
 */
@@ -34,7 +34,6 @@ typedef struct Mbuffer {
 
 #define luaZ_buffremove(buff,i)	((buff)->n -= (i))
 #define luaZ_resetbuffer(buff) ((buff)->n = 0)
-
 
 #define luaZ_resizebuffer(L, buff, size) \
 	((buff)->buffer = luaM_reallocvchar(L, (buff)->buffer, \

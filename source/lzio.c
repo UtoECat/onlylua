@@ -1,5 +1,5 @@
 /*
-** $Id: lzio.c,v 1.37.1.1 2017/04/19 17:20:42 roberto Exp $
+** $Id: lzio.c $
 ** Buffered streams
 ** See Copyright Notice in lua.h
 */
@@ -13,12 +13,14 @@
 #include <string.h>
 
 #include "lua.h"
+
 #include "llimits.h"
 #include "lmem.h"
 #include "lstate.h"
 #include "lzio.h"
 
-LUAI_FUNC int luaZ_fill (ZIO *z) {
+
+int luaZ_fill (ZIO *z) {
   size_t size;
   lua_State *L = z->L;
   const char *buff;
@@ -33,7 +35,7 @@ LUAI_FUNC int luaZ_fill (ZIO *z) {
 }
 
 
-LUAI_FUNC void luaZ_init (lua_State *L, ZIO *z, lua_Reader reader, void *data) {
+void luaZ_init (lua_State *L, ZIO *z, lua_Reader reader, void *data) {
   z->L = L;
   z->reader = reader;
   z->data = data;
@@ -43,7 +45,7 @@ LUAI_FUNC void luaZ_init (lua_State *L, ZIO *z, lua_Reader reader, void *data) {
 
 
 /* --------------------------------------------------------------- read --- */
-LUAI_FUNC size_t luaZ_read (ZIO *z, void *b, size_t n) {
+size_t luaZ_read (ZIO *z, void *b, size_t n) {
   while (n) {
     size_t m;
     if (z->n == 0) {  /* no bytes in buffer? */

@@ -37,19 +37,10 @@ static int panic (lua_State *L) {
   return 0;  /* return to Lua to abort */
 }
 
-static int Bmemory(lua_State* L) {
-	lua_pushnumber(L, memory_used);
-	return 1;
-}
-
-// there is no print function
-static int myprint(lua_State* L) {
-	int n = lua_gettop(L); // count
-	for (int i = 1; i <= n; i++) {
-		fprintf(stdout, "%s ", lua_anytostring(L, i));
-	}
-	fputc('\n', stdout);
-	return 0;
+#include <time.h>
+static int osclock (lua_State *L) {
+  lua_pushnumber(L, ((lua_Number)clock())/(lua_Number)CLOCKS_PER_SEC);
+  return 1;
 }
 
 struct fld {
@@ -71,11 +62,9 @@ int main(int l, const char** argv) {
 	lua_State *L = lua_newstate(customAlloc, NULL);
 	lua_atpanic(L, panic);
 
-	luaopen_base(L);
-	lua_pushcfunction(L, Bmemory);
-	lua_setglobal(L, "memusage");
-	lua_pushcfunction(L, myprint);
-	lua_setglobal(L, "print");
+	luaL_openlibs(L);
+	lua_pushcfunction(L, osclock);
+	lua_setglobal(L, "clock");
 
 	FILE* f = fopen(argv[1], "r");
 	if (!f) {
@@ -86,7 +75,6 @@ int main(int l, const char** argv) {
 	struct fld x = {f, {0}};
 	if (lua_load(L, filereader, &x, argv[1], "t") != LUA_OK) {
 		fprintf(stderr, "Can't load lua source! (%i)\n", lua_status(L));
-		fprintf(stdout, "%s\n", lua_anytostring(L, -1));
 		return -3;
 	}
 	lua_callk(L, 0, 0, 0, NULL);

@@ -9,11 +9,28 @@ end
 print("not safe call trough pcall", pcall(a))
 print("safe call trough pcall", pcall(a, true))
 
-print("-----------Test print--------------")
+local function b(level)
+	if level <= 0 then error("error throwed") end
+	local _, v = pcall(b, level-1)
+	return v.." lvl "..tostring(level)..";"
+end
 
-for k, v in pairs(_G) do
+print("-----------Test pairs--------------")
+
+local t = {
+	"a", "b", "c",
+	sus    = "amogus",
+	notsus = "sus",
+	picious= "sus",
+	endall = "a, b, c, d, e, anchor, 1, 2, sus, sus, sus, self"
+}
+
+for k, v in pairs(t) do
 	print(k, '=', v)
 end
+
+print(pcall(pairs, nil))
+print(pcall(pairs, {}))
 
 print("---------Test loadstring-----------")
 a = loadstring([[
@@ -24,10 +41,14 @@ a = loadstring([[
 
 print(a, select(2, a()))
 a()()
+
+a = loadstring([[
+	
+]])
 print("---------Test metatables-----------")
 
 local orig = {10, 'hehe', 'boi'}
-local t = {}
+t = {}
 print(t)
 
 local mt = {
@@ -50,3 +71,18 @@ end
 
 print(pcall(b, 1, 2))
 print(pcall(b, 4, 4))
+
+print("--------- invalid test --------")
+
+local t = {1, 2, 3}
+
+print(pcall(next, 1, 1))
+print(pcall(next, t, 4))
+print(pcall(inext, "k", 1))
+print(pcall(inext, t, 4))
+
+
+print("--------- test strings --------")
+print(tostring("veeeeeeery loooooong striiiiiing :D"),
+tostring("veeeeeeery veeeeeeeeeeeeeeery loooooong striiiiiing :D"),
+tostring([[iiiiiiiiiiiiiinsssssssssssaaaannneeellllyyyyyyyyyyyyy veeeeeeery veeeeeeeeeeeeeeery loooooong striiiiiing :D]]))
