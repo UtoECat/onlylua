@@ -11,24 +11,6 @@
 #include <limits.h>
 #include <stddef.h>
 
-
-/*
-** ===================================================================
-** General Configuration File for Lua
-**
-** Some definitions here can be changed externally, through the compiler
-** (e.g., with '-D' options): They are commented out or protected
-** by '#if !defined' guards. However, several other definitions
-** should be changed directly here, either because they affect the
-** Lua ABI (by making the changes here, you ensure that all software
-** connected to Lua, such as C libraries, will be compiled with the same
-** configuration); or because they are seldom changed.
-**
-** Search for "@@" to find all configurable definitions.
-** ===================================================================
-*/
-
-
 /*
 ** {====================================================================
 ** System Configuration: macros to adapt (if needed) Lua to some
@@ -60,15 +42,12 @@
 
 #if defined(LUA_USE_LINUX)
 #define LUA_USE_POSIX
-#define LUA_USE_DLOPEN		/* needs an extra library: -ldl */
 #endif
 
 
 #if defined(LUA_USE_MACOSX)
 #define LUA_USE_POSIX
-#define LUA_USE_DLOPEN		/* MacOS does not need -ldl */
 #endif
-
 
 /*
 @@ LUAI_IS32INT is true iff 'int' has (at least) 32 bits.
@@ -160,87 +139,6 @@
 
 /* }================================================================== */
 
-
-
-/*
-** {==================================================================
-** Configuration for Paths.
-** ===================================================================
-*/
-
-/*
-** LUA_PATH_SEP is the character that separates templates in a path.
-** LUA_PATH_MARK is the string that marks the substitution points in a
-** template.
-** LUA_EXEC_DIR in a Windows path is replaced by the executable's
-** directory.
-*/
-#define LUA_PATH_SEP            ";"
-#define LUA_PATH_MARK           "?"
-#define LUA_EXEC_DIR            "!"
-
-
-/*
-@@ LUA_PATH_DEFAULT is the default path that Lua uses to look for
-** Lua libraries.
-@@ LUA_CPATH_DEFAULT is the default path that Lua uses to look for
-** C libraries.
-** CHANGE them if your machine has a non-conventional directory
-** hierarchy or if you want to install your libraries in
-** non-conventional directories.
-*/
-
-#define LUA_VDIR	LUA_VERSION_MAJOR "." LUA_VERSION_MINOR
-#if defined(_WIN32)	/* { */
-/*
-** In Windows, any exclamation mark ('!') in the path is replaced by the
-** path of the directory of the executable file of the current process.
-*/
-#define LUA_LDIR	"!\\lua\\"
-#define LUA_CDIR	"!\\"
-#define LUA_SHRDIR	"!\\..\\share\\lua\\" LUA_VDIR "\\"
-
-#if !defined(LUA_PATH_DEFAULT)
-#define LUA_PATH_DEFAULT  \
-		LUA_LDIR"?.lua;"  LUA_LDIR"?\\init.lua;" \
-		LUA_CDIR"?.lua;"  LUA_CDIR"?\\init.lua;" \
-		LUA_SHRDIR"?.lua;" LUA_SHRDIR"?\\init.lua;" \
-		".\\?.lua;" ".\\?\\init.lua"
-#endif
-
-#if !defined(LUA_CPATH_DEFAULT)
-#define LUA_CPATH_DEFAULT \
-		LUA_CDIR"?.dll;" \
-		LUA_CDIR"..\\lib\\lua\\" LUA_VDIR "\\?.dll;" \
-		LUA_CDIR"loadall.dll;" ".\\?.dll"
-#endif
-
-#else			/* }{ */
-
-#define LUA_ROOT	"/usr/local/"
-#define LUA_LDIR	LUA_ROOT "share/lua/" LUA_VDIR "/"
-#define LUA_CDIR	LUA_ROOT "lib/lua/" LUA_VDIR "/"
-
-#if !defined(LUA_PATH_DEFAULT)
-#define LUA_PATH_DEFAULT  \
-		LUA_LDIR"?.lua;"  LUA_LDIR"?/init.lua;" \
-		LUA_CDIR"?.lua;"  LUA_CDIR"?/init.lua;" \
-		"./?.lua;" "./?/init.lua"
-#endif
-
-#if !defined(LUA_CPATH_DEFAULT)
-#define LUA_CPATH_DEFAULT \
-		LUA_CDIR"?.so;" LUA_CDIR"loadall.so;" "./?.so"
-#endif
-
-#endif			/* } */
-
-
-/*
-@@ LUA_DIRSEP is the directory separator (for submodules).
-** CHANGE it if your machine does not use "/" as the directory separator
-** and is not Windows. (On Windows Lua automatically uses "\".)
-*/
 #if !defined(LUA_DIRSEP)
 
 #if defined(_WIN32)
@@ -305,18 +203,15 @@
 ** give a warning about it. To avoid these warnings, change to the
 ** default definition.
 */
-#if defined(__GNUC__) && ((__GNUC__*100 + __GNUC_MINOR__) >= 302) && \
-    defined(__ELF__)		/* { */
-#define LUAI_FUNC	__attribute__((visibility("internal"))) extern
-#else				/* }{ */
-#define LUAI_FUNC	extern
-#endif				/* } */
+
+#ifndef LUAI_FUNC
+#define LUAI_FUNC	static
+#endif
 
 #define LUAI_DDEC(dec)	LUAI_FUNC dec
 #define LUAI_DDEF	/* empty */
 
 /* }================================================================== */
-
 
 /*
 ** {==================================================================
@@ -337,7 +232,7 @@
 ** (These functions were already officially removed in 5.3;
 ** nevertheless they are still available here.)
 */
-#define LUA_COMPAT_MATHLIB
+//define LUA_COMPAT_MATHLIB
 
 /*
 @@ LUA_COMPAT_APIINTCASTS controls the presence of macros for
@@ -346,14 +241,14 @@
 ** (These macros were also officially removed in 5.3, but they are still
 ** available here.)
 */
-#define LUA_COMPAT_APIINTCASTS
+//define LUA_COMPAT_APIINTCASTS
 
 
 /*
 @@ LUA_COMPAT_LT_LE controls the emulation of the '__le' metamethod
 ** using '__lt'.
 */
-#define LUA_COMPAT_LT_LE
+//define LUA_COMPAT_LT_LE
 
 
 /*
@@ -590,10 +485,10 @@
 ** In C99, 'strtod' does that conversion. Otherwise, you can
 ** leave 'lua_strx2number' undefined and Lua will provide its own
 ** implementation.
-*/
+*
 #if !defined(LUA_USE_C89)
 #define lua_strx2number(s,p)		lua_str2number(s,p)
-#endif
+#endif */
 
 
 /*
@@ -608,11 +503,11 @@
 ** In C99, 'sprintf' (with format specifiers '%a'/'%A') does that.
 ** Otherwise, you can leave 'lua_number2strx' undefined and Lua will
 ** provide its own implementation.
-*/
+*
 #if !defined(LUA_USE_C89)
 #define lua_number2strx(L,b,sz,f,n)  \
 	((void)L, l_sprintf(b,sz,f,(LUAI_UACNUMBER)(n)))
-#endif
+#endif */
 
 
 /*
@@ -653,7 +548,7 @@
 ** macro must include the header 'locale.h'.)
 */
 #if !defined(lua_getlocaledecpoint)
-#define lua_getlocaledecpoint()		(localeconv()->decimal_point[0])
+#define lua_getlocaledecpoint()	'.'
 #endif
 
 
@@ -668,9 +563,11 @@
 #if defined(__GNUC__) && !defined(LUA_NOBUILTIN)
 #define luai_likely(x)		(__builtin_expect(((x) != 0), 1))
 #define luai_unlikely(x)	(__builtin_expect(((x) != 0), 0))
+#define luai_unreachable(x)	__builtin_unreachable()
 #else
 #define luai_likely(x)		(x)
 #define luai_unlikely(x)	(x)
+#define luai_unreachable() lua_assert(0)
 #endif
 
 #endif
@@ -681,7 +578,6 @@
 #define l_likely(x)	luai_likely(x)
 #define l_unlikely(x)	luai_unlikely(x)
 #endif
-
 
 
 /* }================================================================== */
@@ -700,16 +596,17 @@
 ** coercion from strings to numbers.
 */
 /* #define LUA_NOCVTN2S */
-/* #define LUA_NOCVTS2N */
+#define LUA_NOCVTS2N
 
 
 /*
 @@ LUA_USE_APICHECK turns on several consistency checks on the C API.
 ** Define it as a help when debugging C code.
 */
+
 #if defined(LUA_USE_APICHECK)
 #include <assert.h>
-#define luai_apicheck(l,e)	assert(e)
+#define luai_apicheck(l,e)	(assert(e))
 #endif
 
 /* }================================================================== */

@@ -33,7 +33,7 @@ print(pcall(pairs, nil))
 print(pcall(pairs, {}))
 
 print("---------Test loadstring-----------")
-a = loadstring([[
+a = load([[
 	return function() 
 		print('I am loaded string inside a loaded function! :З')
 	end, 'I am loaded string! :D' .. ' and concated!'
@@ -42,9 +42,7 @@ a = loadstring([[
 print(a, select(2, a()))
 a()()
 
-a = loadstring([[
-	
-]])
+a = load([[]])
 print("---------Test metatables-----------")
 
 local orig = {10, 'hehe', 'boi'}
@@ -78,11 +76,42 @@ local t = {1, 2, 3}
 
 print(pcall(next, 1, 1))
 print(pcall(next, t, 4))
-print(pcall(inext, "k", 1))
-print(pcall(inext, t, 4))
-
 
 print("--------- test strings --------")
 print(tostring("veeeeeeery loooooong striiiiiing :D"),
 tostring("veeeeeeery veeeeeeeeeeeeeeery loooooong striiiiiing :D"),
 tostring([[iiiiiiiiiiiiiinsssssssssssaaaannneeellllyyyyyyyyyyyyy veeeeeeery veeeeeeeeeeeeeeery loooooong striiiiiing :D]]))
+
+print("--------- test strings --------")
+
+function deepprint(_value, _name)
+	local stack = {} 
+	local _deep  = " "
+	_name = _name or "G"
+	local tos
+	tos = function(val, name, deep)
+		if stack[val] then return stack[val] end
+		local t = type(val)
+		if t == "string" then
+			return string.format("%q", tostring(val))
+		elseif t == "number" then
+			return tostring(val)
+		elseif t == "table" then
+			stack[val] = _name
+			local buff = {"{\n"}
+			for k,v in pairs(val) do
+				local kname = tos(k, name, deep .. " ")
+				buff[#buff+1] = deep.." "..kname
+				buff[#buff+1] = " = "..tos(v, name .. "." .. tos(k), deep .. " ")
+				buff[#buff+1] = next(val, k) and ",\n" or "\n"
+			end
+			buff[#buff+1] = deep.."}"
+			return table.concat(buff)
+		else
+			return tostring(val)
+		end
+	end
+	print(tos(_value, _name, _deep))
+end
+
+deepprint(getregistry(), "_REG")

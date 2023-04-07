@@ -85,8 +85,6 @@
 #define hashboolean(t,p)	hashpow2(t, p)
 
 
-#define hashpointer(t,p)	hashmod(t, point2uint(p))
-
 
 #define dummynode		(&dummynode_)
 
@@ -98,6 +96,13 @@ static const Node dummynode_ = {
 
 static const TValue absentkey = {ABSTKEYCONSTANT};
 
+/* better lua pointers hash */
+/*#define hashpointer(t,p)	hashmod(t, point2uint(p)/(unsigned int)sizeof(Udata0)) */
+
+static Node* hashpointer (const Table *t, void* p) {
+	lua_Unsigned ui = point2uint((size_t)p/sizeof(Udata0));
+	return hashmod(t, ui);
+}
 
 /*
 ** Hash for integers. To allow a good hash, use the remainder operator
@@ -792,8 +797,8 @@ const TValue *luaH_get (Table *t, const TValue *key) {
       lua_Integer k;
       if (luaV_flttointeger(fltvalue(key), &k, F2Ieq)) /* integral index? */
         return luaH_getint(t, k);  /* use specialized version */
-      /* else... */
-    }  /* FALLTHROUGH */
+      return getgeneric(t, key, 0);
+    }
     default:
       return getgeneric(t, key, 0);
   }

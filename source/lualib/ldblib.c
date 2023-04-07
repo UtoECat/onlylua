@@ -37,13 +37,6 @@ static void checkstack (lua_State *L, lua_State *L1, int n) {
     luaL_error(L, "stack overflow");
 }
 
-
-static int db_getregistry (lua_State *L) {
-  lua_pushvalue(L, LUA_REGISTRYINDEX);
-  return 1;
-}
-
-
 static int db_getmetatable (lua_State *L) {
   luaL_checkany(L, 1);
   if (!lua_getmetatable(L, 1)) {
@@ -60,30 +53,6 @@ static int db_setmetatable (lua_State *L) {
   lua_setmetatable(L, 1);
   return 1;  /* return 1st argument */
 }
-
-
-static int db_getuservalue (lua_State *L) {
-  int n = (int)luaL_optinteger(L, 2, 1);
-  if (lua_type(L, 1) != LUA_TUSERDATA)
-    luaL_pushfail(L);
-  else if (lua_getiuservalue(L, 1, n) != LUA_TNONE) {
-    lua_pushboolean(L, 1);
-    return 2;
-  }
-  return 1;
-}
-
-
-static int db_setuservalue (lua_State *L) {
-  int n = (int)luaL_optinteger(L, 3, 1);
-  luaL_checktype(L, 1, LUA_TUSERDATA);
-  luaL_checkany(L, 2);
-  lua_settop(L, 2);
-  if (!lua_setiuservalue(L, 1, n))
-    luaL_pushfail(L);
-  return 1;
-}
-
 
 /*
 ** Auxiliary function used by several library functions: check for
@@ -198,59 +167,6 @@ static int db_getinfo (lua_State *L) {
     treatstackoption(L, L1, "func");
   return 1;  /* return table */
 }
-
-
-static int db_getlocal (lua_State *L) {
-  int arg;
-  lua_State *L1 = getthread(L, &arg);
-  int nvar = (int)luaL_checkinteger(L, arg + 2);  /* local-variable index */
-  if (lua_isfunction(L, arg + 1)) {  /* function argument? */
-    lua_pushvalue(L, arg + 1);  /* push function */
-    lua_pushstring(L, lua_getlocal(L, NULL, nvar));  /* push local name */
-    return 1;  /* return only name (there is no value) */
-  }
-  else {  /* stack-level argument */
-    lua_Debug ar;
-    const char *name;
-    int level = (int)luaL_checkinteger(L, arg + 1);
-    if (l_unlikely(!lua_getstack(L1, level, &ar)))  /* out of range? */
-      return luaL_argerror(L, arg+1, "level out of range");
-    checkstack(L, L1, 1);
-    name = lua_getlocal(L1, &ar, nvar);
-    if (name) {
-      lua_xmove(L1, L, 1);  /* move local value */
-      lua_pushstring(L, name);  /* push name */
-      lua_rotate(L, -2, 1);  /* re-order */
-      return 2;
-    }
-    else {
-      luaL_pushfail(L);  /* no name (nor value) */
-      return 1;
-    }
-  }
-}
-
-
-static int db_setlocal (lua_State *L) {
-  int arg;
-  const char *name;
-  lua_State *L1 = getthread(L, &arg);
-  lua_Debug ar;
-  int level = (int)luaL_checkinteger(L, arg + 1);
-  int nvar = (int)luaL_checkinteger(L, arg + 2);
-  if (l_unlikely(!lua_getstack(L1, level, &ar)))  /* out of range? */
-    return luaL_argerror(L, arg+1, "level out of range");
-  luaL_checkany(L, arg+3);
-  lua_settop(L, arg+3);
-  checkstack(L, L1, 1);
-  lua_xmove(L, L1, 1);
-  name = lua_setlocal(L1, &ar, nvar);
-  if (name == NULL)
-    lua_pop(L1, 1);  /* pop value (if not popped by 'lua_setlocal') */
-  lua_pushstring(L, name);
-  return 1;
-}
-
 
 /*
 ** get (if 'get' is true) or set an upvalue from a closure
@@ -416,22 +332,6 @@ static int db_gethook (lua_State *L) {
   return 3;
 }
 
-
-static int db_debug (lua_State *L) {
-  for (;;) {
-    char buffer[250];
-    lua_writestringerror("%s", "lua_debug> ");
-    if (fgets(buffer, sizeof(buffer), stdin) == NULL ||
-        strcmp(buffer, "cont\n") == 0)
-      return 0;
-    if (luaL_loadbuffer(L, buffer, strlen(buffer), "=(debug command)") ||
-        lua_pcall(L, 0, 0, 0))
-      lua_writestringerror("%s\n", luaL_tolstring(L, -1, NULL));
-    lua_settop(L, 0);  /* remove eventual returns */
-  }
-}
-
-
 static int db_traceback (lua_State *L) {
   int arg;
   lua_State *L1 = getthread(L, &arg);
@@ -445,36 +345,19 @@ static int db_traceback (lua_State *L) {
   return 1;
 }
 
-
-static int db_setcstacklimit (lua_State *L) {
-  int limit = (int)luaL_checkinteger(L, 1);
-  int res = lua_setcstacklimit(L, limit);
-  lua_pushinteger(L, res);
-  return 1;
-}
-
-
 static const luaL_Reg dblib[] = {
-  {"debug", db_debug},
-  {"getuservalue", db_getuservalue},
   {"gethook", db_gethook},
   {"getinfo", db_getinfo},
-  {"getlocal", db_getlocal},
-  {"getregistry", db_getregistry},
   {"getmetatable", db_getmetatable},
   {"getupvalue", db_getupvalue},
   {"upvaluejoin", db_upvaluejoin},
   {"upvalueid", db_upvalueid},
-  {"setuservalue", db_setuservalue},
   {"sethook", db_sethook},
-  {"setlocal", db_setlocal},
   {"setmetatable", db_setmetatable},
   {"setupvalue", db_setupvalue},
   {"traceback", db_traceback},
-  {"setcstacklimit", db_setcstacklimit},
   {NULL, NULL}
 };
-
 
 LUAMOD_API int luaopen_debug (lua_State *L) {
   luaL_newlib(L, dblib);

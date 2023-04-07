@@ -134,7 +134,7 @@ static GCObject **getgclist (GCObject *o) {
       lua_assert(u->nuvalue > 0);
       return &u->gclist;
     }
-    default: lua_assert(0); return 0;
+    default: luai_unreachable(); return 0;
   }
 }
 
@@ -312,13 +312,15 @@ static void reallymarkobject (global_State *g, GCObject *o) {
         break;
       }
       /* else... */
+			goto ft_udata;
     }  /* FALLTHROUGH */
     case LUA_VLCL: case LUA_VCCL: case LUA_VTABLE:
-    case LUA_VTHREAD: case LUA_VPROTO: {
+		case LUA_VTHREAD: case LUA_VPROTO: 
+		ft_udata: {
       linkobjgclist(o, g->gray);  /* to be visited later */
       break;
     }
-    default: lua_assert(0); break;
+    default: luai_unreachable(); break;
   }
 }
 
@@ -660,7 +662,7 @@ static lu_mem propagatemark (global_State *g) {
     case LUA_VCCL: return traverseCclosure(g, gco2ccl(o));
     case LUA_VPROTO: return traverseproto(g, gco2p(o));
     case LUA_VTHREAD: return traversethread(g, gco2th(o));
-    default: lua_assert(0); return 0;
+    default: luai_unreachable(); return 0;
   }
 }
 
@@ -801,7 +803,7 @@ static void freeobj (lua_State *L, GCObject *o) {
       luaM_freemem(L, ts, sizelstring(ts->u.lnglen));
       break;
     }
-    default: lua_assert(0);
+    default: luai_unreachable();
   }
 }
 
@@ -1631,7 +1633,7 @@ static lu_mem singlestep (lua_State *L) {
       }
       break;
     }
-    default: lua_assert(0); return 0;
+    default: luai_unreachable(); return 0;
   }
   g->gcstopem = 0;
   return work;

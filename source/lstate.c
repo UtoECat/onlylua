@@ -265,7 +265,6 @@ static void preinit_thread (lua_State *L, global_State *g) {
   L->oldpc = 0;
 }
 
-
 static void close_state (lua_State *L) {
   global_State *g = G(L);
   if (!completestate(g))  /* closing a partially built state? */
@@ -350,7 +349,6 @@ LUA_API int lua_resetthread (lua_State *L) {
   lua_unlock(L);
   return status;
 }
-
 
 LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud) {
   int i;

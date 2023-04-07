@@ -37,7 +37,7 @@
 */
 #if !defined(LUA_USE_JUMPTABLE)
 #if defined(__GNUC__)
-#define LUA_USE_JUMPTABLE	1
+#define LUA_USE_JUMPTABLE	0
 #else
 #define LUA_USE_JUMPTABLE	0
 #endif
@@ -101,7 +101,7 @@ static int l_strton (const TValue *obj, TValue *result) {
 ** by the macro 'tonumber'.
 */
 int luaV_tonumber_ (const TValue *obj, lua_Number *n) {
-  TValue v;
+  TValue v = {0};
   if (ttisinteger(obj)) {
     *n = cast_num(ivalue(obj));
     return 1;
@@ -1165,7 +1165,13 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
   for (;;) {
     Instruction i;  /* instruction being executed */
     StkId ra;  /* instruction's A register */
-    vmfetch();
+
+		if (l_unlikely(trap)) {  /* stack reallocation or hooks? */ 
+    	trap = luaG_traceexec(L, pc);  /* handle hooks */ 
+   		updatebase(ci);  /* correct stack */ 
+ 		} 
+ 		i = *(pc++); 
+  	ra = RA(i); /* WARNING: any stack reallocation invalidates 'ra' */ 
     #if 0
       /* low-level line tracing for debugging Lua */
       printf("line: %d\n", luaG_getfuncline(cl->p, pcRel(pc, cl->p)));
@@ -1830,9 +1836,12 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
         vmbreak;
       }
       vmcase(OP_EXTRAARG) {
-        lua_assert(0);
+        luai_unreachable(0);
         vmbreak;
       }
+			#ifndef LUA_USE_JUMPTABLE
+			default : luai_unreachable();
+			#endif
     }
   }
 }

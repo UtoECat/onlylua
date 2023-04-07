@@ -246,6 +246,9 @@ typedef l_uint32 Instruction;
 /*
 ** macros that are executed whenever program enters the Lua core
 ** ('lua_lock') and leaves the core ('lua_unlock')
+**
+** It is not recommended to redefine that to real mutex/spinlocks!
+** It's better to control locking by yourself
 */
 #if !defined(lua_lock)
 #define lua_lock(L)	((void) 0)

@@ -1,10 +1,10 @@
-.PHONY: all clean profile
+.PHONY: all clean profile tests
 
-DEBUG = 0
+DEBUG = 1
 
 ifeq ($(DEBUG), 1)
-CCFLAGS = -Wall -Wextra -Wunused-macros -O1 #-Wc++-compat
-LDFLAGS = -g # for debugging
+CCFLAGS = -Wall -Wextra -Wunused-macros -Og -DLUA_DEBUG -DLUA_USE_APICHECK -DLUAI_ASSERT
+LDFLAGS = -g -fsanitize=undefined # for debugging
 else ifeq ($(DEBUG), 2)
 CCFLAGS = -Wall -Wextra -Wunused -O1 #-Wc++-compat
 LDFLAGS = -g0 -pg -fprofile-arcs # for profiling
@@ -13,18 +13,35 @@ CCFLAGS = -Wall -Wextra -Wunused -O3
 LDFLAGS = -flto -g0 -s
 endif
 
-all : lua.c luatest
+all : luatest
+NOPACK = 1
 
-lua.c : ./source/*.c ./source/make.lua
+ifeq ($(NOPACK), 0)
+
+lua.c : ./source/* 
 	cd ./source && lua make.lua
 
-luatest : lua.c test.c
-	gcc -I. $^ -o $@ $(CCFLAGS) -lm $(LDFLAGS)
+luatest : lua.c test.c lualib.c
+	$(CC) -I. $^ -o $@ $(CCFLAGS) -lm $(LDFLAGS)
 
-profile:
-	./luatest bench.lua
-	gprof luatest > ./profiler.out
-	gvim profiler.out
+else
+
+CCFLAGS += -DLUAI_FUNC='' -I./source -DNOPACK
+
+luatest : ./source/*.c ./source/lualib/*.c test.c
+	$(CC) -I. $^ -o $@ $(CCFLAGS) -lm $(LDFLAGS)
+
+endif
+
+callgrind.out: all
+	cd tests && valgrind --tool=callgrind --collect-systime=nsec --dump-instr=yes --callgrind-out-file=../callgrind.out -v ../luatest ./all.lua
+
+profile: callgrind.out
+	cd tests && callgrind_annotate ../callgrind.out ../*.c ../*.h > ../profiler.out
+	gvim ./profiler.out & disown
+
+tests: all
+	cd tests && ../luatest ./all.lua
 
 clean :
 	rm -f ./luatest

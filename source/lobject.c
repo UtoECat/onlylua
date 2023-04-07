@@ -65,7 +65,7 @@ static lua_Integer intarith (lua_State *L, int op, lua_Integer v1,
     case LUA_OPSHR: return luaV_shiftl(v1, -v2);
     case LUA_OPUNM: return intop(-, 0, v1);
     case LUA_OPBNOT: return intop(^, ~l_castS2U(0), v1);
-    default: lua_assert(0); return 0;
+    default: luai_unreachable(); return 0;
   }
 }
 
@@ -81,7 +81,7 @@ static lua_Number numarith (lua_State *L, int op, lua_Number v1,
     case LUA_OPIDIV: return luai_numidiv(L, v1, v2);
     case LUA_OPUNM: return luai_numunm(L, v1);
     case LUA_OPMOD: return luaV_modf(L, v1, v2);
-    default: lua_assert(0); return 0;
+    default: luai_unreachable(); return 0;
   }
 }
 

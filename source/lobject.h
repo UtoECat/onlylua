@@ -41,8 +41,6 @@
 /* add variant bits to a type */
 #define makevariant(t,v)	((t) | ((v) << 4))
 
-
-
 /*
 ** Union of all Lua values
 */
@@ -53,7 +51,6 @@ typedef union Value {
   lua_Integer i;   /* integer numbers */
   lua_Number n;    /* float numbers */
 } Value;
-
 
 /*
 ** Tagged Values. This is the basic representation of values in Lua:
@@ -66,10 +63,8 @@ typedef struct TValue {
   TValuefields;
 } TValue;
 
-
 #define val_(o)		((o)->value_)
 #define valraw(o)	(val_(o))
-
 
 /* raw type tag of a TValue */
 #define rawtt(o)	((o)->tt_)
@@ -83,7 +78,6 @@ typedef struct TValue {
 
 /* type of a TValue */
 #define ttype(o)	(novariant(rawtt(o)))
-
 
 /* Macros to test type */
 #define checktag(o,t)		(rawtt(o) == (t))
@@ -110,7 +104,6 @@ typedef struct TValue {
 
 /* set a value's tag */
 #define settt_(o,t)	((o)->tt_=(t))
-
 
 /* main macro to copy values (from 'obj2' to 'obj1') */
 #define setobj(L,obj1,obj2) \
@@ -366,7 +359,6 @@ typedef struct GCObject {
 /* set a string to a new object */
 #define setsvalue2n	setsvalue
 
-
 /*
 ** Header for a string value.
 */
@@ -382,13 +374,10 @@ typedef struct TString {
   char contents[1];
 } TString;
 
-
-
 /*
 ** Get the actual string (array of bytes) from a 'TString'.
 */
 #define getstr(ts)  ((ts)->contents)
-
 
 /* get the actual string (array of bytes) from a Lua value */
 #define svalue(o)       getstr(tsvalue(o))
@@ -401,13 +390,11 @@ typedef struct TString {
 
 /* }================================================================== */
 
-
 /*
 ** {==================================================================
 ** Userdata
 ** ===================================================================
 */
-
 
 /*
 ** Light userdata should be a variant of userdata, but for compatibility
@@ -495,7 +482,6 @@ typedef struct Udata0 {
 
 #define LUA_VPROTO	makevariant(LUA_TPROTO, 0)
 
-
 /*
 ** Description of an upvalue for function prototypes
 */
@@ -505,7 +491,6 @@ typedef struct Upvaldesc {
   lu_byte idx;  /* index of upvalue (in stack or in outer function's list) */
   lu_byte kind;  /* kind of corresponding variable */
 } Upvaldesc;
-
 
 /*
 ** Description of a local variable for function prototypes
@@ -626,8 +611,6 @@ typedef struct UpVal {
   } u;
 } UpVal;
 
-
-
 #define ClosureHeader \
 	CommonHeader; lu_byte nupvalues; GCObject *gclist
 
@@ -693,20 +676,17 @@ typedef union Node {
   TValue i_val;  /* direct access to node's value as a proper 'TValue' */
 } Node;
 
-
 /* copy a value into a key */
 #define setnodekey(L,node,obj) \
 	{ Node *n_=(node); const TValue *io_=(obj); \
 	  n_->u.key_val = io_->value_; n_->u.key_tt = io_->tt_; \
 	  checkliveness(L,io_); }
 
-
 /* copy a value from a key */
 #define getnodekey(L,obj,node) \
 	{ TValue *io_=(obj); const Node *n_=(node); \
 	  io_->value_ = n_->u.key_val; io_->tt_ = n_->u.key_tt; \
 	  checkliveness(L,io_); }
-
 
 /*
 ** About 'alimit': if 'isrealasize(t)' is true, then 'alimit' is the
@@ -720,7 +700,6 @@ typedef union Node {
 #define setrealasize(t)		((t)->flags &= cast_byte(~BITRAS))
 #define setnorealasize(t)	((t)->flags |= BITRAS)
 
-
 typedef struct Table {
   CommonHeader;
   lu_byte flags;  /* 1<<p means tagmethod(p) is not present */
@@ -732,7 +711,6 @@ typedef struct Table {
   struct Table *metatable;
   GCObject *gclist;
 } Table;
-
 
 /*
 ** Macros to manipulate keys inserted in nodes

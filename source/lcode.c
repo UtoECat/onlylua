@@ -709,7 +709,7 @@ static void const2exp (TValue *v, expdesc *e) {
     case LUA_VSHRSTR:  case LUA_VLNGSTR:
       e->k = VKSTR; e->u.strval = tsvalue(v);
       break;
-    default: lua_assert(0);
+    default: luai_unreachable();
   }
 }
 
@@ -839,7 +839,9 @@ static void discharge2reg (FuncState *fs, expdesc *e, int reg) {
     }
     case VKSTR: {
       str2K(fs, e);
-    }  /* FALLTHROUGH */
+			luaK_codek(fs, reg, e->u.info);
+      break;
+    }
     case VK: {
       luaK_codek(fs, reg, e->u.info);
       break;
@@ -1073,7 +1075,7 @@ void luaK_storevar (FuncState *fs, expdesc *var, expdesc *ex) {
       codeABRK(fs, OP_SETTABLE, var->u.ind.t, var->u.ind.idx, ex);
       break;
     }
-    default: lua_assert(0);  /* invalid var kind to store */
+    default: luai_unreachable();  /* invalid var kind to store */
   }
   freeexp(fs, ex);
 }
@@ -1205,7 +1207,7 @@ static void codenot (FuncState *fs, expdesc *e) {
       e->k = VRELOC;
       break;
     }
-    default: lua_assert(0);  /* cannot happen */
+    default: luai_unreachable();  /* cannot happen */
   }
   /* interchange true and false lists */
   { int temp = e->f; e->f = e->t; e->t = temp; }
@@ -1575,12 +1577,13 @@ void luaK_prefix (FuncState *fs, UnOpr op, expdesc *e, int line) {
     case OPR_MINUS: case OPR_BNOT:  /* use 'ef' as fake 2nd operand */
       if (constfolding(fs, op + LUA_OPUNM, e, &ef))
         break;
-      /* else */ /* FALLTHROUGH */
+      codeunexpval(fs, cast(OpCode, op + OP_UNM), e, line);
+      break;
     case OPR_LEN:
       codeunexpval(fs, cast(OpCode, op + OP_UNM), e, line);
       break;
     case OPR_NOT: codenot(fs, e); break;
-    default: lua_assert(0);
+    default: luai_unreachable();
   }
 }
 
@@ -1628,7 +1631,7 @@ void luaK_infix (FuncState *fs, BinOpr op, expdesc *v) {
       /* else keep numeral, which may be an immediate operand */
       break;
     }
-    default: lua_assert(0);
+    default: luai_unreachable();
   }
 }
 
@@ -1688,8 +1691,10 @@ void luaK_posfix (FuncState *fs, BinOpr opr,
       if (finishbinexpneg(fs, e1, e2, OP_ADDI, line, TM_SUB))
         break; /* coded as (r1 + -I) */
       /* ELSE */
+			goto lb_ft1;
     }  /* FALLTHROUGH */
-    case OPR_DIV: case OPR_IDIV: case OPR_MOD: case OPR_POW: {
+    case OPR_DIV: case OPR_IDIV: case OPR_MOD: case OPR_POW:
+		lb_ft1:	{
       codearith(fs, opr, e1, e2, 0, line);
       break;
     }
@@ -1732,7 +1737,7 @@ void luaK_posfix (FuncState *fs, BinOpr opr,
       codeorder(fs, op, e1, e2);
       break;
     }
-    default: lua_assert(0);
+    default: luai_unreachable();
   }
 }
 
@@ -1813,8 +1818,10 @@ void luaK_finish (FuncState *fs) {
           break;  /* no extra work */
         /* else use OP_RETURN to do the extra work */
         SET_OPCODE(*pc, OP_RETURN);
+				goto ft_2;
       }  /* FALLTHROUGH */
-      case OP_RETURN: case OP_TAILCALL: {
+			case OP_RETURN: case OP_TAILCALL: 
+			ft_2: {
         if (fs->needclose)
           SETARG_k(*pc, 1);  /* signal that it needs to close */
         if (p->is_vararg)

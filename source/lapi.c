@@ -154,17 +154,14 @@ LUA_API lua_CFunction lua_atpanic (lua_State *L, lua_CFunction panicf) {
 }
 
 
-LUA_API lua_Number lua_version (lua_State *L) {
+LUA_API lua_Number lua_version (lua_State* L) {
   UNUSED(L);
   return LUA_VERSION_NUM;
 }
 
-
-
 /*
 ** basic stack manipulation
 */
-
 
 /*
 ** convert an acceptable stack index into an absolute index
@@ -1441,8 +1438,8 @@ LUA_API void *lua_upvalueid (lua_State *L, int fidx, int n) {
       CClosure *f = clCvalue(fi);
       if (1 <= n && n <= f->nupvalues)
         return &f->upvalue[n - 1];
-      /* else */
-    }  /* FALLTHROUGH */
+      return NULL;
+    }
     case LUA_VLCF:
       return NULL;  /* light C functions have no upvalues */
     default: {

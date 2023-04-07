@@ -25,16 +25,6 @@
 #include "lvm.h"
 
 
-static const char udatatypename[] = "userdata";
-
-LUAI_DDEF const char *const luaT_typenames_[LUA_TOTALTYPES] = {
-  "no value",
-  "nil", "boolean", udatatypename, "number",
-  "string", "table", "function", udatatypename, "thread",
-  "upvalue", "proto" /* these last cases are used for tests only */
-};
-
-
 void luaT_init (lua_State *L) {
   static const char *const luaT_eventname[] = {  /* ORDER TM */
     "__index", "__newindex",
