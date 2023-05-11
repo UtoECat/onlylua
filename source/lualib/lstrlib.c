@@ -1330,7 +1330,6 @@ static void createmetatable (lua_State *L) {
   lua_pop(L, 1);  /* pop metatable */
 }
 
-
 /*
 ** Open string library
 */
@@ -1339,4 +1338,3 @@ LUAMOD_API int luaopen_string (lua_State *L) {
   createmetatable(L);
   return 1;
 }
-

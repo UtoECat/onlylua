@@ -5,11 +5,9 @@
 static const char BC_##NAME##_DATA[] = SRC;\
 static const size_t BC_##NAME##_SIZE = sizeof(BC_##NAME##_DATA);
 
-#if defined(COMPILED_BYTECODE)
-	#define INTERNAL_MODE '\033'
-	#define _TOKENIZE(A) #A
-	#define LUA_BCLOAD(L, NAME) luaL_loadbufferx(L, BC_##NAME##_DATA, BC_##NAME##_SIZE, _TOKENIZE(NAME), INTERNAL_MODE);
-#else
+#define _TOKENIZE(A) #A
 // cause source always has main chunk (except for precompiled ones)
-	#define LUA_BCLOAD(L, NAME) luaL_loadbufferx(L, BC_##NAME##_DATA, BC_##NAME##_SIZE, NULL, "i"); lua_call(L, 0, 0);
-#endif
+// Loads and runs bytecode with one argument from the top of the stack
+// (keeping it on the stack). Returns nothing
+#define LUA_BCLOAD(L, NAME) luaL_loadbufferx(L, BC_##NAME##_DATA, BC_##NAME##_SIZE, _TOKENIZE(NAME), "b") != LUA_OK ? lua_error(L) : 0; \
+	lua_pushvalue(L, -2); lua_call(L, 1, 0);

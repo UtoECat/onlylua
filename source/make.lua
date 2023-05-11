@@ -123,36 +123,45 @@ local function unused_check(m, v)
 end
 
 local buf = {}
-local header = "\x1bLua00\x19\x93\r\n\x1a\n444488888888999999992222222299999999"
+local header = "\x1bLua"
+
+local MAJOR = 5
+local MINOR = 5
+local LUAC_VERSION = (MAJOR)*16+(MINOR)
+
+local hH = "#define COMPILED_BYTECODE\n"
 
 local function parseLua(str)
 	local name, code = str:match('%s*([_%w]-)%s*,%s*"([^"]*)"')
 	if not name then return end
+	code = code
 	if _VERSION == "Lua 5.4" then 
 		local f, err = load(code)
 		if not f then
-			error('bad function '..name)
+			error('bad function '..name..'\n reason : '..err)
 		end
 		code = string.dump(f, true)
-		code = code:sub(#header, -1)
+		-- change bytecode version
+		code = header .. string.char(LUAC_VERSION) .. code:sub(#header + 2, -1)
 		print("compiled!")
 	else
 		code = code:gsub('[\n\t ]+', ' ')
 		code = code:gsub('"', '\'')
 	end
  	-- to C code
-		local t = {("static const char BC_%s_DATA[] = {\n"):format(name)}
+		local t = {}
+		t[#t+1] = ("static const char BC_%s_DATA[] = {\n"):format(name)
 		for i = 1, #code do
 			local c = string.byte(code, i, i)
-			t[#t+1] = tostring(c)..', '
-			if i % 7 then
+			t[#t+1] = tostring(c)..(i==#code and '' or ', ')
+			if i % 7 == 0 then
 				t[#t+1] = '\n '
 			end
 		end
 		t[#t+1] = '};\n'
 		t[#t+1] = ("static const size_t BC_%s_SIZE = %i;\n"):format(name, #code)
 	local v = table.concat(t)
-	print(("Parsed %q"):format(v))
+	print(("Parsed %q"):format(code))
 	return v
 end
 

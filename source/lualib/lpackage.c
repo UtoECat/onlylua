@@ -20,27 +20,27 @@
 #include "lualib/bcmap.h"
 
 LUA_BCDEF(require, 
-"function require(name) \
+"local package = ...\
+function require(name) \
 	local B local A \
 	\
-	A = loaded[name] \
+	A = package.loaded[name] \
 	if A then \
 		return A \
 	end \
 	\
-	A = preload[name] \
+	A = package.preload[name] \
 	if A then \
-		A = A() \
-		loaded[name] = A \
-		return A \
+		goto fin \
 	end \
-	 \
+	\
 	A, B = loadfile(name..'.lua') \
 	if not A then \
 		error('file '..name..' is not found!\n'..B) \
 	end \
+	::fin::\
 	A = A() \
-	loaded[name] = A \
+	package.loaded[name] = A \
 	return A \
 end")
 
@@ -53,6 +53,5 @@ LUAMOD_API int (luaopen_package) (lua_State *L) {
 	lua_createtable(L, 0, 0);
 	lua_setfield(L, -2, "preload");
 	LUA_BCLOAD(L, require);
-	lua_setglobal(L, "require");
-	return 0;
+	return 1;
 }
