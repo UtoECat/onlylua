@@ -70,12 +70,15 @@ typedef enum {
 
 static const char *const luaT_typenames_[LUA_TOTALTYPES] = {
   "no value",
-  "nil", "boolean", "userdata", "number",
+  "nil", "boolean", "lightuserdata", "number",
   "string", "table", "function", "userdata", "thread",
   "upvalue", "proto" /* these last cases are used for tests only */
 };
 
 LUAI_FUNC const char *luaT_objtypename (lua_State *L, const TValue *o);
+
+// Extension
+LUAI_FUNC TString* luaT_objtypestr (lua_State *L, const TValue *o);
 
 LUAI_FUNC const TValue *luaT_gettm (Table *events, TMS event, TString *ename);
 LUAI_FUNC const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o,

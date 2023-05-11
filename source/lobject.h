@@ -526,23 +526,30 @@ typedef struct Proto {
   lu_byte numparams;  /* number of fixed (named) parameters */
   lu_byte is_vararg;
   lu_byte maxstacksize;  /* number of registers needed by this function */
+
   int sizeupvalues;  /* size of 'upvalues' */
-  int sizek;  /* size of 'k' */
-  int sizecode;
+  int sizek;  /* size of constants array */
+  int sizecode; /* size of opcodes array */
+  int sizep;  /* size of array of prototypes */
+  Upvaldesc *upvalues;  /* upvalues */
+  TValue *k;  /* constants used by the function */
+  Instruction *code;  /* opcodes */
+  struct Proto **p;  /* functions defined inside the function */
+	/*
+	 *  DEBUG INFO BELOW 
+	 */
+  ls_byte *lineinfo;  /* information about source lines (debug information) */
   int sizelineinfo;
-  int sizep;  /* size of 'p' */
   int sizelocvars;
   int sizeabslineinfo;  /* size of 'abslineinfo' */
   int linedefined;  /* debug information  */
   int lastlinedefined;  /* debug information  */
-  TValue *k;  /* constants used by the function */
-  Instruction *code;  /* opcodes */
-  struct Proto **p;  /* functions defined inside the function */
-  Upvaldesc *upvalues;  /* upvalue information */
-  ls_byte *lineinfo;  /* information about source lines (debug information) */
   AbsLineInfo *abslineinfo;  /* idem */
-  LocVar *locvars;  /* information about local variables (debug information) */
-  TString  *source;  /* used for debug information */
+  LocVar *locvars;  /* information about local variables */
+  TString  *source;  /* that's right */
+	/*
+	 * END OF DEBUG INFO
+	 */
   GCObject *gclist;
 } Proto;
 
@@ -748,13 +755,24 @@ typedef struct Table {
 /*
 ** 'module' operation for hashing (size is always a power of 2)
 */
+
+
 #define lmod(s,size) \
 	(check_exp((size&(size-1))==0, (cast_int((s) & ((size)-1)))))
-
 
 #define twoto(x)	(1<<(x))
 #define sizenode(t)	(twoto((t)->lsizenode))
 
+#include <stdio.h>
+static inline unsigned int fibonacci_hash(unsigned int s, unsigned int size)
+{
+	//assert(size < 32);
+	unsigned int res = size ?
+		(s * 11400714819323198485u) >> (64 - size) : 0;
+	//fprintf(stderr, "%li = %li hashed by %li\n", (long)res, (long)s, (long)twoto(size));
+	//assert(res <= (unsigned int)twoto(size));
+	return res;
+}
 
 /* size of buffer for 'luaO_utf8esc' function */
 #define UTF8BUFFSZ	8

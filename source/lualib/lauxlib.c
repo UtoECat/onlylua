@@ -94,11 +94,12 @@ LUALIB_API void luaL_traceback (lua_State *L, lua_State *L1,
         lua_pushfstring(L, "\n\t%s:%d: in ", ar.short_src, ar.currentline);
       luaL_addvalue(&b);
 
-			if (ar.what == 'C') {
+			if (ar.what[0] == 'C') {
 				int oldtop = lua_gettop(L);
       	lua_getinfo(L1, "f", &ar); // get function object
 				if (oldtop == lua_gettop(L)) goto fallback;// some shit
 				luaL_addvalue(&b);
+  			luaL_addstring(&b, " aka ");
 			}
 			fallback:
      	pushfuncname(L, &ar);
@@ -139,19 +140,23 @@ LUALIB_API int luaL_argerror (lua_State *L, int arg, const char *extramsg) {
 LUALIB_API int luaL_typeerror (lua_State *L, int arg, const char *tname) {
   const char *msg;
   const char *typearg;  /* name for the type of the actual argument */
-  if (luaL_getmetafield(L, arg, "__name") == LUA_TSTRING)
-    typearg = lua_tostring(L, -1);  /* use the given type name */
-  else if (lua_type(L, arg) == LUA_TLIGHTUSERDATA)
-    typearg = "light userdata";  /* special name for messages */
-  else
-    typearg = luaL_typename(L, arg);  /* standard name */
+	typearg = lua_objtypename(L, arg);  /* standard name */
   msg = lua_pushfstring(L, "%s expected, got %s", tname, typearg);
   return luaL_argerror(L, arg, msg);
 }
 
 
 static void tag_error (lua_State *L, int arg, int tag) {
-  luaL_typeerror(L, arg, lua_typename(L, tag));
+  const char *msg;
+  const char *typearg;  /* name for the type of the actual argument */
+  if (luaL_getmetafield(L, arg, "__name") == LUA_TSTRING)
+    typearg = lua_tostring(L, -1);  /* use the given type name */
+  else if (lua_type(L, arg) == LUA_TLIGHTUSERDATA)
+    typearg = "light userdata";  /* special name for messages */
+  else
+    typearg = lua_typename(L, lua_type(L, arg));  /* standard name */
+  msg = lua_pushfstring(L, "%s expected, got %s", lua_typename(L, tag), typearg);
+  luaL_argerror(L, arg, msg);
 }
 
 /*
@@ -498,12 +503,8 @@ LUALIB_API const char *luaL_tolstring (lua_State *L, int idx, size_t *len) {
         lua_pushliteral(L, "nil");
         break;
       default: {
-        int tt = luaL_getmetafield(L, idx, "__name");  /* try name */
-        const char *kind = (tt == LUA_TSTRING) ? lua_tostring(L, -1) :
-                                                 luaL_typename(L, idx);
+        const char *kind = lua_objtypename(L, idx);
         lua_pushfstring(L, "%s:(%p)", kind, lua_topointer(L, idx));
-        if (tt != LUA_TNIL)
-          lua_remove(L, -2);  /* remove '__name' */
         break;
       }
     }
@@ -597,8 +598,11 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
     return realloc(ptr, nsize);
 }
 
-static int panic (lua_State *) {
-	lua_writestringerror("Unprotected call to Lua API! %s\n", "aborting");
+static int panic (lua_State *L) {
+	luaL_traceback(L, L, lua_tostring(L, -1), 1);
+	lua_writestringerror(
+		"PANIC: Unprotected call to Lua API! \nPANIC: %s!\n",
+	 	lua_tostring(L, -1));
   return 0;  /* return to Lua to abort */
 }
 

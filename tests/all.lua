@@ -251,8 +251,8 @@ warn("#This is", " another one")
 assert(debug == nil)
 debug = require "debug"
 
-print(string.format("%d-bit integers, %d-bit floats",
-        string.packsize("j") * 8, string.packsize("n") * 8))
+--print(string.format("%d-bit integers, %d-bit floats",
+--        string.packsize("j") * 8, string.packsize("n") * 8))
 
 debug.sethook(function (a) assert(type(a) == 'string') end, "cr")
 

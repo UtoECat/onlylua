@@ -63,13 +63,13 @@ static int luaB_tonumber (lua_State *L) {
 		return 1;
 		case LUA_TSTRING:
 		if (!lua_stringtonumber(L, lua_tostring(L, -1)))
-			lua_pushnumber(L, NAN);
+			lua_pushnil(L);
 		return 1;
 		case LUA_TBOOLEAN:
 	 	lua_pushnumber(L, lua_toboolean(L, -1));
 		return 1;
 		default:
-	 	lua_pushnumber(L, NAN);
+	 	lua_pushnil(L);
 		return 1;
 	}
 }
@@ -89,6 +89,10 @@ static int luaB_error (lua_State *L) {
 static int luaB_getmetatable (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   if (!lua_getmetatable(L, 1)) return 0;  /* no metatable */
+	lua_pushstring(L, "__metatable");
+	if (lua_rawget(L, -2) == LUA_TNIL) {
+		lua_pop(L, 1);
+	}
   return 1;
 }
 
@@ -96,6 +100,13 @@ static int luaB_setmetatable (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_argexpected(L, lua_istable(L, 2) || lua_isnoneornil(L, 2), 2, "nil or table");
   lua_settop(L, 2);
+
+	if (lua_getmetatable(L, 1)) {
+		lua_pushstring(L, "__metatable");
+		if (lua_rawget(L, -2) == LUA_TNIL) {
+			lua_pop(L, 2);
+		} else luaL_error(L, "attempt to change protected metatable");
+	}
   lua_setmetatable(L, 1);
   return 1;
 }
@@ -124,7 +135,6 @@ static int luaB_rawget (lua_State *L) {
 static int luaB_rawset (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_checkany(L, 2);
-  luaL_checkany(L, 3);
   lua_settop(L, 3);
   lua_rawset(L, 1);
   return 1;
@@ -206,22 +216,15 @@ static int luaB_collectgarbage (lua_State *L) {
 
 
 static int luaB_rawtype (lua_State *L) {
+	if (lua_gettop(L) < 1) luaL_error(L, "bad argument #1 : value excepted");
   lua_pushstring(L, lua_typename(L, lua_type(L, 1)));
   return 1;
 }
 
 static int luaB_type (lua_State *L) {
-  int t = lua_type(L, 1);
-	if (luai_unlikely(t == LUA_TTABLE || t == LUA_TUSERDATA)) {
-		if (luaL_getmetafield(L, 1, "__name") == LUA_TSTRING)
-			return 1;
-		lua_pop(L, 1);
-	} else if (luai_unlikely(t == LUA_TNONE)) {
-		lua_pushstring(L, "#1 : value excepted!");
-		lua_error(L);
-	}
-  lua_pushstring(L, lua_typename(L, t));
-  return 1;
+	if (lua_gettop(L) < 1) luaL_error(L, "bad argument #1 : value excepted");
+	lua_pushobjtype(L, 1);
+	return 1;
 }
 
 static int luaB_next (lua_State *L) {

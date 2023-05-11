@@ -73,7 +73,11 @@ void luaX_init (lua_State *L) {
   luaC_fix(L, obj2gco(e));  /* never collect this name */
   for (i=0; i<NUM_RESERVED; i++) {
     TString *ts = luaS_new(L, luaX_tokens[i]);
+		for (int j = 0; j <= LUA_TOTALTYPES; j++) {
+			if (G(L)->typenames[j] == ts) goto skip; // skip then
+		}
     luaC_fix(L, obj2gco(ts));  /* reserved words are never collected */
+		skip:
     ts->extra = cast_byte(i+1);  /* reserved word */
   }
 }

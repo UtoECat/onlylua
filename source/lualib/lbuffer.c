@@ -175,7 +175,8 @@ LUALIB_API void luaL_addvalue (luaL_Buffer *B) {
 	FUNCHANDLER
   lua_State *L = B->L;
   size_t len;
-  const char *s = lua_tolstring(L, -1, &len);
+  const char *s = luaL_tolstring(L, -1, &len);
+	lua_remove(L, -2);
   char *b = prepbuffsize(B, len, -2);
   memcpy(b, s, len * sizeof(char));
   luaL_addsize(B, len);

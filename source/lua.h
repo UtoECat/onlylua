@@ -17,7 +17,7 @@
 
 
 #define LUA_VERSION_MAJOR	"5"
-#define LUA_VERSION_MINOR	"4"
+#define LUA_VERSION_MINOR	"5"
 #define LUA_VERSION_RELEASE	"4"
 
 #define LUA_VERSION_NUM			504
@@ -186,6 +186,7 @@ LUA_API int             (lua_isinteger) (lua_State *L, int idx);
 LUA_API int             (lua_isuserdata) (lua_State *L, int idx);
 LUA_API int             (lua_type) (lua_State *L, int idx);
 LUA_API const char     *(lua_typename) (lua_State *L, int tp);
+LUA_API const char     *(lua_objtypename)(lua_State *L, int idx);
 
 LUA_API lua_Number      (lua_tonumberx) (lua_State *L, int idx, int *isnum);
 LUA_API lua_Integer     (lua_tointegerx) (lua_State *L, int idx, int *isnum);
@@ -349,6 +350,9 @@ LUA_API void      (lua_setallocf) (lua_State *L, lua_Alloc f, void *ud);
 
 LUA_API void (lua_toclose) (lua_State *L, int idx);
 LUA_API void (lua_closeslot) (lua_State *L, int idx);
+
+// extension 
+LUA_API void (lua_pushobjtype)(lua_State* L, int idx);
 
 
 /*

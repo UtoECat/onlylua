@@ -1,5 +1,27 @@
 print("Heloo world!")
 
+print("------Test type and rawtype---------")
+
+local function checktypes(v, eq, ex)
+	local c = type(v)
+	local r = rawtype(v)
+	print('type() ==', c, 'rawtype ==', r)
+	assert(eq and c == r or c == ex)
+end
+
+checktypes(nil, true)
+checktypes(0  , true)
+checktypes(0.0, true)
+checktypes("" , true)
+checktypes('s', true)
+checktypes({}, true)
+local t = {}
+checktypes(t, true)
+setmetatable(t, {__name="amogus"})
+checktypes(t, false, "amogus")
+t = coroutine.create(print)
+checktypes(t, true)
+
 print("------Test error and pcall---------")
 function a(safe) 
 	if not safe then error("error :(") end
@@ -37,7 +59,7 @@ a = load([[
 	return function() 
 		print('I am loaded string inside a loaded function! :З')
 	end, 'I am loaded string! :D' .. ' and concated!'
-]]);
+]], "sus");
 
 print(a, select(2, a()))
 a()()
@@ -60,6 +82,7 @@ local mt = {
 
 setmetatable(t, mt)
 print(t, t[1], t[2], t[3])
+print(type(t), rawtype(t))
 
 print("------------ Test assertions ------")
 local function b(f, n)
@@ -84,29 +107,35 @@ tostring([[iiiiiiiiiiiiiinsssssssssssaaaannneeellllyyyyyyyyyyyyy veeeeeeery veee
 
 print("--------- test strings --------")
 
-function deepprint(_value, _name)
-	local stack = {} 
+function deepprint(_value, _name, __dd)
+	local stack = type(__dd) == "table" and __dd or {} 
 	local _deep  = " "
 	_name = _name or "G"
+
 	local tos
 	tos = function(val, name, deep)
+		if _ENV and val == _ENV then
+			name = "_ENV"
+		end
 		if stack[val] then return stack[val] end
-		local t = type(val)
+		local t = rawtype(val)
 		if t == "string" then
 			return string.format("%q", tostring(val))
 		elseif t == "number" then
 			return tostring(val)
 		elseif t == "table" then
-			stack[val] = _name
+			stack[val] = name
 			local buff = {"{\n"}
 			for k,v in pairs(val) do
 				local kname = tos(k, name, deep .. " ")
-				buff[#buff+1] = deep.." "..kname
+				buff[#buff+1] = deep.." ["..kname.."]"
 				buff[#buff+1] = " = "..tos(v, name .. "." .. tos(k), deep .. " ")
 				buff[#buff+1] = next(val, k) and ",\n" or "\n"
 			end
 			buff[#buff+1] = deep.."}"
 			return table.concat(buff)
+		elseif t == "function" then
+			return (debug.getfname(val)) or tostring(val)
 		else
 			return tostring(val)
 		end
@@ -115,3 +144,10 @@ function deepprint(_value, _name)
 end
 
 deepprint(getregistry(), "_REG")
+deepprint(getfixed(), "_FIXED")
+
+print("Memory usage after test : ", collectgarbage("count") * 1024)
+collectgarbage();
+collectgarbage();
+collectgarbage();
+print("Memory usage after FULL GC : ", collectgarbage("count") * 1024)

@@ -144,9 +144,11 @@ static int load_aux (lua_State *L, int status, int envidx) {
   if (luai_likely(status == LUA_OK)) {
     if (envidx != 0) {  /* 'env' parameter? */
       lua_pushvalue(L, envidx);  /* environment for loaded function */
-      if (!lua_setupvalue(L, -2, 1))  /* set it as 1st upvalue */
-        lua_pop(L, 1);  /* remove 'env' if not used by previous call */
-    }
+		} else {
+			lua_geti(L, LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
+		}
+		if (!lua_setupvalue(L, -2, 1))  /* set it as 1st upvalue */
+    	lua_pop(L, 1);  /* remove 'env' if not used by previous call */
     return 1;
   }
   else {  /* error (message is on top of the stack) */
@@ -172,12 +174,15 @@ static int dofilecont (lua_State *L, int d1, lua_KContext d2) {
 static int luaB_dofile (lua_State *L) {
   const char *fname = luaL_optstring(L, 1, NULL);
   lua_settop(L, 1);
-  if (luai_unlikely(loadfilex(L, fname, "bt") != LUA_OK)) {
+  if (luai_unlikely(loadfilex(L, fname, 0) != LUA_OK)) {
     return lua_error(L);
 	}
   lua_callk(L, 0, LUA_MULTRET, 0, dofilecont);
   return dofilecont(L, 0, 0);
 }
+
+// hehe
+int luaC_getfixed(lua_State* L);
 
 /*
  * Don't ask...
@@ -198,6 +203,8 @@ int protected (lua_State* L) {
 	lua_setglobal(L, "loadfile");
 	lua_pushcfunction(L, luaB_dofile);
 	lua_setglobal(L, "dofile");
+	lua_pushcfunction(L, luaC_getfixed);
+	lua_setglobal(L, "getfixed");
 	return 0;
 }
 

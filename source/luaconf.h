@@ -675,9 +675,10 @@
 ** without modifying the main part of the file.
 */
 
-
-
-
+/*
+ * Removes all possibly unsafe functions from lua stdlib.
+ */
+#define LUA_NO_UNSAFE 1
 
 #endif
 

@@ -275,7 +275,13 @@ LUA_API void lua_pushvalue (lua_State *L, int idx) {
   lua_unlock(L);
 }
 
-
+LUA_API void lua_pushobjtype(lua_State* L, int idx) {
+	const TValue *o = index2value(L, idx);
+	api_checknelems(L, 1);
+  setsvalue2s(L, L->top, luaT_objtypestr(L, o));
+	api_incr_top(L);
+  return;
+}
 
 /*
 ** access functions (stack -> C)
@@ -294,6 +300,10 @@ LUA_API const char *lua_typename (lua_State *L, int t) {
   return ttypename(t);
 }
 
+LUA_API const char* lua_objtypename(lua_State *L, int idx) {
+  const TValue *o = index2value(L, idx);
+  return luaT_objtypename(L, o);
+}
 
 LUA_API int lua_iscfunction (lua_State *L, int idx) {
   const TValue *o = index2value(L, idx);

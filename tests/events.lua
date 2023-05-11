@@ -18,9 +18,8 @@ assert(B == false)
 _ENV["B"] = undef
 assert(B == 30)
 
-assert(getmetatable{} == nil)
-assert(getmetatable(4) == nil)
-assert(getmetatable(nil) == nil)
+assert(debug.getmetatable{} == nil)
+assert(debug.getmetatable(4) == nil)
 a={name = "NAME"}; setmetatable(a, {__metatable = "xuxu",
                     __tostring=function(x) return x.name end})
 assert(getmetatable(a) == "xuxu")
@@ -436,20 +435,22 @@ print '+'
 mt = {__index = function (a,b) return a+b end,
       __len = function (x) return math.floor(x) end}
 debug.setmetatable(10, mt)
-assert(getmetatable(-2) == mt)
+assert(debug.getmetatable(-2) == mt)
 assert((10)[3] == 13)
 assert((10)[3] == 13)
 assert(#3.45 == 3)
 debug.setmetatable(23, nil)
-assert(getmetatable(-2) == nil)
+assert(debug.getmetatable(-2) == nil)
 
+local oldmt = getmetatable
+getmetatable = debug.getmetatable
 debug.setmetatable(true, mt)
-assert(getmetatable(false) == mt)
+assert(debug.getmetatable(false) == mt)
 mt.__index = function (a,b) return a or b end
 assert((true)[false] == true)
 assert((false)[false] == false)
 debug.setmetatable(false, nil)
-assert(getmetatable(true) == nil)
+assert(debug.getmetatable(true) == nil)
 
 debug.setmetatable(nil, mt)
 assert(getmetatable(nil) == mt)
@@ -482,6 +483,8 @@ child.foo = 10      --> CRASH (on some machines)
 assert(T == parent and K == "foo" and V == 10)
 
 print 'OK'
+
+getmetatable = oldmt
 
 return 12
 

@@ -72,13 +72,21 @@
 ** When the original hash value is good, hashing by a power of 2
 ** avoids the cost of '%'.
 */
+#if 1
+#define hashpow2(t,n)		(gnode(t, fibonacci_hash((n), t->lsizenode)))
+#else
 #define hashpow2(t,n)		(gnode(t, lmod((n), sizenode(t))))
+#endif
 
 /*
 ** for other types, it is better to avoid modulo by power of 2, as
 ** they can have many 2 factors.
 */
+#if 0
 #define hashmod(t,n)	(gnode(t, ((n) % ((sizenode(t)-1)|1))))
+#else
+#define hashmod(t, n) (gnode(t, fibonacci_hash((n), t->lsizenode)))
+#endif
 
 
 #define hashstr(t,str)		hashpow2(t, (str)->hash)

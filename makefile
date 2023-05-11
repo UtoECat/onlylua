@@ -1,6 +1,6 @@
 .PHONY: all clean profile tests
 
-DEBUG = 1
+DEBUG = 0
 
 ifeq ($(DEBUG), 1)
 CCFLAGS = -Wall -Wextra -Wunused-macros -Og -DLUA_DEBUG -DLUA_USE_APICHECK -DLUAI_ASSERT
@@ -14,7 +14,7 @@ LDFLAGS = -flto -g0 -s
 endif
 
 all : luatest
-NOPACK = 1
+NOPACK = 0
 
 ifeq ($(NOPACK), 0)
 
@@ -28,7 +28,14 @@ else
 
 CCFLAGS += -DLUAI_FUNC='' -I./source -DNOPACK
 
-luatest : ./source/*.c ./source/lualib/*.c test.c
+./build/%.o: ./source/%.c
+	mkdir -p $(dir $@)
+	$(CC) -I. -c $< -o $@ $(CCFLAGS) $(LDFLAGS)
+
+CFILES = $(shell find ./source/ -name '*.c')
+OFILES = $(CFILES:./source/%.c=./build/%.o)
+
+luatest : $(OFILES) test.c
 	$(CC) -I. $^ -o $@ $(CCFLAGS) -lm $(LDFLAGS)
 
 endif

@@ -4,8 +4,6 @@ local strsub = string.sub
 
 local print = print
 
-_ENV = nil
-
 -- Try to convert a value to an integer, without assuming any coercion.
 local function toint (x)
   x = tonumber(x)   -- handle numerical strings
@@ -14,7 +12,6 @@ local function toint (x)
   end
   return tointeger(x)
 end
-
 
 -- If operation fails, maybe second operand has a metamethod that should
 -- have been called if not for this string metamethod, so try to
@@ -43,8 +40,8 @@ local function checkargs (x, y, mtname)
   end
 end
 
-
-local smt = getmetatable("")
+local debug = require("debug")
+local smt = debug.getmetatable("")
 
 smt.__band = function (x, y)
   local x, y = checkargs(x, y, "__band")

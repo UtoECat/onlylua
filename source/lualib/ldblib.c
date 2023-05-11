@@ -38,7 +38,7 @@ static void checkstack (lua_State *L, lua_State *L1, int n) {
 }
 
 static int db_getmetatable (lua_State *L) {
-  luaL_checkany(L, 1);
+  if (lua_type(L, 1) == LUA_TNONE) luaL_error(L, "bad arg #1: value excepted");
   if (!lua_getmetatable(L, 1)) {
     lua_pushnil(L);  /* no metatable */
   }
@@ -166,6 +166,29 @@ static int db_getinfo (lua_State *L) {
   if (strchr(options, 'f'))
     treatstackoption(L, L1, "func");
   return 1;  /* return table */
+}
+
+/*
+ * extension : returns function name, if possible
+ */
+static int db_getfname(lua_State* L) {
+	luaL_checktype(L, 1, LUA_TFUNCTION);
+	lua_settop(L, 1);
+	lua_pushvalue(L, 1);
+	lua_Debug ar;
+	lua_getinfo(L, ">nS", &ar);
+	if (ar.namewhat[0] != '\0') {
+		lua_pushfstring(L, "%s '%s'", ar.namewhat, ar.name);
+	} else if (ar.what[0] == 'C') { // C code
+		lua_pushfstring(L, "C function:(%p)", lua_topointer(L, 1));
+	} else if (ar.what[0] == 'm') { // ???
+		lua_pushfstring(L, "main chunk:[in %s]", ar.source);
+	} else if (ar.what[0] == 'L') { // lua code
+		lua_pushfstring(L, "function:%s[in %s]", ar.name, ar.source);
+	} else {
+		lua_pushfstring(L, "function:(%p)", lua_topointer(L, 1));
+	}
+	return 1;
 }
 
 /*
@@ -346,16 +369,19 @@ static int db_traceback (lua_State *L) {
 }
 
 static const luaL_Reg dblib[] = {
+	#if !LUA_NO_UNSAFE
   {"gethook", db_gethook},
-  {"getinfo", db_getinfo},
   {"getmetatable", db_getmetatable},
   {"getupvalue", db_getupvalue},
   {"upvaluejoin", db_upvaluejoin},
   {"upvalueid", db_upvalueid},
-  {"sethook", db_sethook},
   {"setmetatable", db_setmetatable},
   {"setupvalue", db_setupvalue},
+	#endif
+  {"getinfo", db_getinfo},
+  {"sethook", db_sethook},
   {"traceback", db_traceback},
+  {"getfname", db_getfname},
   {NULL, NULL}
 };
 
