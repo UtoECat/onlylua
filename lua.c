@@ -566,7 +566,6 @@ static const char *const luaT_typenames_[LUA_TOTALTYPES] = {
   "upvalue", "proto" 
 };
 LUAI_FUNC const char *luaT_objtypename (lua_State *L, const TValue *o);
-// Extension
 LUAI_FUNC TString* luaT_objtypestr (lua_State *L, const TValue *o);
 LUAI_FUNC const TValue *luaT_gettm (Table *events, TMS event, TString *ename);
 LUAI_FUNC const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o,
@@ -1283,13 +1282,6 @@ LUA_API void lua_pushvalue (lua_State *L, int idx) {
   api_incr_top(L);
   lua_unlock(L);
 }
-LUA_API void lua_pushobjtype(lua_State* L, int idx) {
-	const TValue *o = index2value(L, idx);
-	api_checknelems(L, 1);
-  setsvalue2s(L, L->top, luaT_objtypestr(L, o));
-	api_incr_top(L);
-  return;
-}
 LUA_API int lua_type (lua_State *L, int idx) {
   const TValue *o = index2value(L, idx);
   return (isvalid(L, o) ? ttype(o) : LUA_TNONE);
@@ -1298,10 +1290,6 @@ LUA_API const char *lua_typename (lua_State *L, int t) {
   UNUSED(L);
   api_check(L, LUA_TNONE <= t && t < LUA_NUMTYPES, "invalid type");
   return ttypename(t);
-}
-LUA_API const char* lua_objtypename(lua_State *L, int idx) {
-  const TValue *o = index2value(L, idx);
-  return luaT_objtypename(L, o);
 }
 LUA_API int lua_iscfunction (lua_State *L, int idx) {
   const TValue *o = index2value(L, idx);
@@ -5733,12 +5721,6 @@ void luaC_barrierback_ (lua_State *L, GCObject *o) {
 }
 void luaC_fix (lua_State *L, GCObject *o) {
   global_State *g = G(L);
-	#if 0//included "stdio.h" 
-	if (novariant((o)->tt) == LUA_TSTRING) {
-		TString* s = &((cast_u(o))->ts);
-		fprintf(stderr, "'%s' is fixed now!\n", getstr(s));
-	}
-	#endif
   lua_assert(g->allgc == o);  
   set2gray(o);  
   setage(o, G_OLD);  
@@ -5746,25 +5728,6 @@ void luaC_fix (lua_State *L, GCObject *o) {
   o->next = g->fixedgc;  
   g->fixedgc = o;
 }
-#if 1//included "stdio.h" 
-#define __incr_top(L)   {L->top++; api_check(L, L->top <= L->ci->top, 				"stack overflow");}
-int luaC_getfixed(lua_State* L) {
-  global_State *g = G(L);
-	GCObject* o = g->fixedgc;
-	lua_createtable(L, 0, 0);
-	int oldgcstp  = g->gcstp;
-	g->gcstp |= GCSTPGC;  
-	int i = 1;
-	while (o) {
-		setgcovalue(L, s2v(L->top), o);
-		__incr_top(L);
-		lua_seti(L, -2, i++);
-		o = o->next;
-	}
-	g->gcstp = oldgcstp; 
-	return 1;
-}
-#endif
 GCObject *luaC_newobj (lua_State *L, int tt, size_t sz) {
   global_State *g = G(L);
   GCObject *o = cast(GCObject *, luaM_newobject(L, novariant(tt), sz));
@@ -10423,13 +10386,13 @@ void luaT_init (lua_State *L) {
     "__unm", "__bnot", "__lt", "__le",
     "__concat", "__call", "__close"
   };
-	// init tag methods names at first
+	
   int i;
   for (i=0; i<TM_N; i++) {
     G(L)->tmname[i] = luaS_new(L, luaT_eventname[i]);
     luaC_fix(L, obj2gco(G(L)->tmname[i]));  
   }
-	// now let's init typenames
+	
 	for (i=0; i<LUA_TOTALTYPES; i++) {
     G(L)->typenames[i] = luaS_new(L, luaT_typenames_[i]);
     luaC_fix(L, obj2gco(G(L)->typenames[i]));  
@@ -12333,3 +12296,39 @@ size_t luaZ_read (ZIO *z, void *b, size_t n) {
   }
   return 0;
 }
+// root include lextensions.c
+#define lext_c
+//included "stdio.h" 
+//included "string.h" 
+				
+LUA_API const char* lua_objtypename(lua_State *L, int idx) {
+  const TValue *o = index2value(L, idx);
+  return luaT_objtypename(L, o);
+}
+LUA_API void lua_pushobjtype(lua_State* L, int idx) {
+	const TValue *o = index2value(L, idx);
+	api_checknelems(L, 1);
+  setsvalue2s(L, L->top, luaT_objtypestr(L, o));
+	api_incr_top(L);
+  return;
+}
+#if 0//included "stdio.h" 
+int luaC_getfixed(lua_State* L) {
+  global_State *g = G(L);
+	GCObject* o = g->fixedgc;
+	lua_createtable(L, 0, 0);
+	int oldgcstp  = g->gcstp;
+	g->gcstp |= GCSTPGC;  
+	int i = 1;
+	while (o) {
+		setgcovalue(L, s2v(L->top), o);
+		__incr_top(L);
+		lua_seti(L, -2, i++);
+		o = o->next;
+	}
+	g->gcstp = oldgcstp; 
+	return 1;
+}
+#else
+int luaC_getfixed(lua_State* L) {lua_createtable(L, 0, 0); return 1;}
+#endif

@@ -9,24 +9,25 @@ OnlyLua - minified and modified 5.4 lua, only luaCore and minified base librarie
 - `lua.h` - standart lua api + `lauxlib.h` and `lualib.h` in one file
 - `lua.c` - full lua core packed in one file for amalgam compilation
 - `lualib.c` - all lua libraries packed into one c file.
+6. Some small perfomance extensions : 
+- typenames are GCFIXED now
+- `void lua_pushobjtype(lua_State* L, int idx)` returns it to the stack without expensive string table lookups.
 
 ## warning
-this project is still in development. If you have some issues - please send them to the `issues` on the GitHub page with this repository : [link]()
+this project is still in development. If you have some issues - please send them to the `issues` on the GitHub page with this repository : [link](https://github.com/UtoECat/onlylua)
 
 # why?
-This is a good base for your own standard lua library, or for embendding lua in trully safe manner. (how i planned to use this)   
+This is a good base for your own standard lua library, or for embendding lua in trully safe or fast manner. (how i planned to use this)   
 
-# changes in baselib (TODO ALL)
+# changes in baselib
 - get/setmetatable on anything is allowed **ONLY** for the tables.
 - removed strange (at my opinion) extensions in baselib
 - some functions was simplified
-- some functions was rewrited on lua itself
-- ~~newtable() function - create table with specified hash and array length
-- cleartable() function - cleanups table in fastest way possible~~
+- some functions was rewrited on lua itself (`require`)
 
 # CAPI extensions
-Are not exist anymore. They all so much time consuming and will break with new lua release.
-But... Cleartable is one extension that i want to make.
+see `lextensions.c` file for them.
+
 # how to include in your project
 - Remember to follow lua licensing terms : [LICENSE](LICENSE).
 - **(Optional)** *Install lua (if you want to have possibility to rebuild `lua.c` and `lua.h`)*
@@ -35,7 +36,10 @@ But... Cleartable is one extension that i want to make.
 - Enjoy :D
 
 *WARNING* this packing of lua sources breaks compability with C++! be careful, and build lua.c with c compiler, and nothing more!
+
 # TODO and known issues, warnings, or additional info.
+- ~~newtable() function - create table with specified hash and array length
+- cleartable() function - cleanups table in fastest way possible~~
 - **WARNING** : **AVOID USAGE OF -fanalyzer compiler flag ON DEVICES WITH LESS THAN 4-6 GIGS OF RAM!** 
 - *TODO* Need to make doxygen documentation for CAPI and custom baselib :)
 - **DONE** ~~Need to fix A LOT compiler warnings in lua sources (.\_.)~~
@@ -44,6 +48,9 @@ But... Cleartable is one extension that i want to make.
 - **DONE?** ~~mark all private functions as static...~~
 - **ISSUE** this packed lua version is not very `c++-compat`. Some fixes are required.
 - **TODO** remove locale and stdio dependency!
+- **TODO** Implement custom internal block allocator for GC objects
+
+- **HELPFUL TIP** Compile your project and lua sources with -flto and -O2/-O3! It becomes really faster. 
 
 # how to build a test example ? (unix only)
 It's not very recommended to do that... But... Here is :

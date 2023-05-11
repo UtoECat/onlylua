@@ -34,13 +34,13 @@ void luaT_init (lua_State *L) {
     "__unm", "__bnot", "__lt", "__le",
     "__concat", "__call", "__close"
   };
-	// init tag methods names at first
+	/* init tag methods names at first */
   int i;
   for (i=0; i<TM_N; i++) {
     G(L)->tmname[i] = luaS_new(L, luaT_eventname[i]);
     luaC_fix(L, obj2gco(G(L)->tmname[i]));  /* never collect these names */
   }
-	// now let's init typenames
+	/* now let's init typenames */
 	for (i=0; i<LUA_TOTALTYPES; i++) {
     G(L)->typenames[i] = luaS_new(L, luaT_typenames_[i]);
     luaC_fix(L, obj2gco(G(L)->typenames[i]));  /* never collect */
@@ -83,6 +83,7 @@ const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
 
 
 /*
+** EXTENSION
 ** Return the name of the type of an object. For tables and userdata
 ** with metatable, use their '__name' metafield, if present.
 */

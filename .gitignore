@@ -8,3 +8,4 @@ luatest
 lua-5.3/
 
 callgrind*
+profiler.out

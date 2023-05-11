@@ -242,13 +242,6 @@ void luaC_barrierback_ (lua_State *L, GCObject *o) {
 
 void luaC_fix (lua_State *L, GCObject *o) {
   global_State *g = G(L);
-	#if 0
-	#include <stdio.h>
-	if (novariant((o)->tt) == LUA_TSTRING) {
-		TString* s = &((cast_u(o))->ts);
-		fprintf(stderr, "'%s' is fixed now!\n", getstr(s));
-	}
-	#endif
   lua_assert(g->allgc == o);  /* object must be 1st in 'allgc' list! */
   set2gray(o);  /* they will be gray forever */
   setage(o, G_OLD);  /* and old forever */
@@ -256,29 +249,6 @@ void luaC_fix (lua_State *L, GCObject *o) {
   o->next = g->fixedgc;  /* link it to 'fixedgc' list */
   g->fixedgc = o;
 }
-
-#if 1
-#include <stdio.h>
-#define __incr_top(L)   {L->top++; api_check(L, L->top <= L->ci->top, \
-				"stack overflow");}
-
-int luaC_getfixed(lua_State* L) {
-  global_State *g = G(L);
-	GCObject* o = g->fixedgc;
-	lua_createtable(L, 0, 0);
-	int oldgcstp  = g->gcstp;
-	g->gcstp |= GCSTPGC;  /* avoid GC steps */
-	int i = 1;
-	while (o) {
-		setgcovalue(L, s2v(L->top), o);
-		__incr_top(L);
-		lua_seti(L, -2, i++);
-		o = o->next;
-	}
-	g->gcstp = oldgcstp; /* restore gc state */
-	return 1;
-}
-#endif
 
 
 /*

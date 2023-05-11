@@ -275,14 +275,6 @@ LUA_API void lua_pushvalue (lua_State *L, int idx) {
   lua_unlock(L);
 }
 
-LUA_API void lua_pushobjtype(lua_State* L, int idx) {
-	const TValue *o = index2value(L, idx);
-	api_checknelems(L, 1);
-  setsvalue2s(L, L->top, luaT_objtypestr(L, o));
-	api_incr_top(L);
-  return;
-}
-
 /*
 ** access functions (stack -> C)
 */
@@ -293,16 +285,10 @@ LUA_API int lua_type (lua_State *L, int idx) {
   return (isvalid(L, o) ? ttype(o) : LUA_TNONE);
 }
 
-
 LUA_API const char *lua_typename (lua_State *L, int t) {
   UNUSED(L);
   api_check(L, LUA_TNONE <= t && t < LUA_NUMTYPES, "invalid type");
   return ttypename(t);
-}
-
-LUA_API const char* lua_objtypename(lua_State *L, int idx) {
-  const TValue *o = index2value(L, idx);
-  return luaT_objtypename(L, o);
 }
 
 LUA_API int lua_iscfunction (lua_State *L, int idx) {
@@ -310,12 +296,10 @@ LUA_API int lua_iscfunction (lua_State *L, int idx) {
   return (ttislcf(o) || (ttisCclosure(o)));
 }
 
-
 LUA_API int lua_isinteger (lua_State *L, int idx) {
   const TValue *o = index2value(L, idx);
   return ttisinteger(o);
 }
-
 
 LUA_API int lua_isnumber (lua_State *L, int idx) {
   lua_Number n;
