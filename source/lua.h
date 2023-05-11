@@ -497,6 +497,7 @@ struct lua_Debug {
 
 /******************************************************************************
 * Copyright (C) 1994-2022 Lua.org, PUC-Rio.
+* Copyright (C) 2023 UtoECat <utopia.egor.cat.allandall@gmail.com>
 *
 * Permission is hereby granted, free of charge, to any person obtaining
 * a copy of this software and associated documentation files (the
