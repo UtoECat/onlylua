@@ -26,8 +26,11 @@
 
 #define LUAC_FORMAT	0	/* this is the official format */
 
+/* special strip for bytecode to create internal functions */
+#define LUAC_INTERNAL_STRIP 666
+
 /* load one chunk; from lundump.c */
-LUAI_FUNC LClosure* luaU_undump (lua_State* L, ZIO* Z, const char* name);
+LUAI_FUNC LClosure* luaU_undump (lua_State* L, ZIO* Z, const char* name, int skip);
 
 /* dump one chunk; from ldump.c */
 LUAI_FUNC int luaU_dump (lua_State* L, const Proto* f, lua_Writer w,

@@ -410,6 +410,25 @@ static int sort (lua_State *L) {
 
 /* }====================================================== */
 
+/*
+ * EXTENSIONS
+ */
+
+static int tnew(lua_State* L) {
+	int a = luaL_checkinteger(L, 1);
+	int b = luaL_checkinteger(L, 2);
+	if (a < 0) luaL_argerror(L, 1, "number of array elements cannot be negative");
+	if (b < 0) luaL_argerror(L, 2, "number of hash table slots cannot be negative");
+	lua_createtable(L, a, b);
+	return 1;
+}
+
+static int tclear(lua_State* L) {
+	luaL_checktype(L, 1, LUA_TTABLE);
+	int keep = lua_toboolean(L, 2);
+	lua_cleartable(L, 1, keep);
+	return 0;
+}
 
 static const luaL_Reg tab_funcs[] = {
   {"concat", tconcat},
@@ -419,6 +438,8 @@ static const luaL_Reg tab_funcs[] = {
   {"remove", tremove},
   {"move", tmove},
   {"sort", sort},
+	{"new", tnew},
+	{"clear", tclear},
   {NULL, NULL}
 };
 

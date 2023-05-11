@@ -308,9 +308,10 @@ static void checkHeader (LoadState *S) {
 /*
 ** Load precompiled chunk.
 */
-LClosure *luaU_undump(lua_State *L, ZIO *Z, const char *name) {
+LClosure *luaU_undump(lua_State *L, ZIO *Z, const char *name, int skip) {
   LoadState S;
   LClosure *cl;
+
   if (*name == '@' || *name == '=')
     S.name = name + 1;
   else if (*name == LUA_SIGNATURE[0])
@@ -319,7 +320,7 @@ LClosure *luaU_undump(lua_State *L, ZIO *Z, const char *name) {
     S.name = name;
   S.L = L;
   S.Z = Z;
-  checkHeader(&S);
+  if (!skip) checkHeader(&S);
   cl = luaF_newLclosure(L, loadByte(&S));
   setclLvalue2s(L, L->top, cl);
   luaD_inctop(L);

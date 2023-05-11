@@ -3,16 +3,18 @@ if jit then
 	jit.off()
 end
 
-local test = "tablea"
+local test = "string"
 --for k,v in pairs(_G) do
 --	print(k, v)
 --end
 
-if not newtable then
+if not table.new then
 	newtable = function() return {} end
+else
+	newtable = table.new
 end
 
-local t = newtable(10000, 5000000)
+local t = newtable(10000, 500000)
 
 local clock = clock
 
@@ -67,9 +69,21 @@ time = clock()
 print("cleaning table")
 i = 0
 
-for k,v in pairs(t) do
-	t[k] = nil
+if table.clear then
+	table.clear(t, false)
+else
+	for k,v in pairs(t) do
+		t[k] = nil
+	end
 end
 
 print("is done with", clock()-time, "seconds!")
+print("check is table alive")
+print('#=', #t, t[0], t[1], t[2], t.hehe, t.boi)
+t.hehe = 1
+t.sus = "among"
+t["amogus"] = "sus"
+t[0] = 300
+t[1] = "omegamogus"
+print('#=', #t, t[0], t[1], t[2], t.hehe, t.boi, t.sus)
 print("done!")

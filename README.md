@@ -5,7 +5,7 @@ OnlyLua - minified and modified 5.4 lua, only luaCore and minified base librarie
 2. Lua debug is not loaded by default, some unsafe functions was removed
 3. no dynamic runtime CAPI libraries loading *(only basic require)*
 4. **DOXYGEN** documentation is in progress .\_.
-5. Inspired by *minilua*, all lua is packed in 2 files : 
+5. Inspired by *minilua*, all lua is packed in 2/3 files : 
 - `lua.h` - standart lua api + `lauxlib.h` and `lualib.h` in one file
 - `lua.c` - full lua core packed in one file for amalgam compilation
 - `lualib.c` - all lua libraries packed into one c file.
@@ -20,10 +20,12 @@ this project is still in development. If you have some issues - please send them
 This is a good base for your own standard lua library, or for embendding lua in trully safe or fast manner. (how i planned to use this)   
 
 # changes in baselib
-- get/setmetatable on anything is allowed **ONLY** for the tables.
+- get/setmetatable is allowed **ONLY** for the tables.
 - removed strange (at my opinion) extensions in baselib
 - some functions was simplified
 - some functions was rewrited on lua itself (`require`)
+- table.new() function - create table with specified hash and array length
+- table.clear() function - cleanups table in fastest way possible
 
 # CAPI extensions
 see `lextensions.c` file for them.
@@ -38,8 +40,6 @@ see `lextensions.c` file for them.
 *WARNING* this packing of lua sources breaks compability with C++! be careful, and build lua.c with c compiler, and nothing more!
 
 # TODO and known issues, warnings, or additional info.
-- ~~newtable() function - create table with specified hash and array length
-- cleartable() function - cleanups table in fastest way possible~~
 - **WARNING** : **AVOID USAGE OF -fanalyzer compiler flag ON DEVICES WITH LESS THAN 4-6 GIGS OF RAM!** 
 - *TODO* Need to make doxygen documentation for CAPI and custom baselib :)
 - **DONE** ~~Need to fix A LOT compiler warnings in lua sources (.\_.)~~

@@ -67,7 +67,7 @@ local sources = {
 local libsources = {
 	"lauxlib.c", "lbaselib.c", "lcorolib.c", "ldblib.c",
 	"lmathlib.c", "lstrlib.c", "ltablib.c", "lutf8lib.c",
-	"linit.c", "lbuffer.c"
+	"linit.c", "lbuffer.c", "lpackage.c"
 }
 
 -- some useful functions
@@ -123,6 +123,38 @@ local function unused_check(m, v)
 end
 
 local buf = {}
+local header = "\x1bLua00\x19\x93\r\n\x1a\n444488888888999999992222222299999999"
+
+local function parseLua(str)
+	local name, code = str:match('%s*([_%w]-)%s*,%s*"([^"]*)"')
+	if not name then return end
+	if _VERSION == "Lua 5.4" then 
+		local f, err = load(code)
+		if not f then
+			error('bad function '..name)
+		end
+		code = string.dump(f, true)
+		code = code:sub(#header, -1)
+		print("compiled!")
+	else
+		code = code:gsub('[\n\t ]+', ' ')
+		code = code:gsub('"', '\'')
+	end
+ 	-- to C code
+		local t = {("static const char BC_%s_DATA[] = {\n"):format(name)}
+		for i = 1, #code do
+			local c = string.byte(code, i, i)
+			t[#t+1] = tostring(c)..', '
+			if i % 7 then
+				t[#t+1] = '\n '
+			end
+		end
+		t[#t+1] = '};\n'
+		t[#t+1] = ("static const size_t BC_%s_SIZE = %i;\n"):format(name, #code)
+	local v = table.concat(t)
+	print(("Parsed %q"):format(v))
+	return v
+end
 
 local function donefile(file, append, prepend)
 	local str = table.concat(buf, '\n')
@@ -132,7 +164,12 @@ local function donefile(file, append, prepend)
 	str = str:gsub("/%*.-%*/", "") -- remove /* */ commentaries
 	str = str:gsub("\\%s-\n", "") -- remove continue line
 	str = str:gsub("\n?%s*#%s*define[ \t]+([_%w]*)[ \t]?(.-)\n", unused_check)
+	str = str:gsub("\t", " ") -- remove tabs
 	str = str:gsub("\n\n+", "\n") -- remove extra newlines...
+
+	-- bytecode definition
+	str = str:gsub(
+	"LUA_BCDEF%s*%b()", parseLua)
 	str = (append or "") .. str .. (prepend or "")
 
 	for k, v in pairs(included) do

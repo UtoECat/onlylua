@@ -46,11 +46,25 @@ LUA_API const char* lua_objtypename(lua_State *L, int idx) {
  * on big amount of `type(a) == "something"` checks.
  */
 LUA_API void lua_pushobjtype(lua_State* L, int idx) {
+	lua_lock(L);
 	const TValue *o = index2value(L, idx);
 	api_checknelems(L, 1);
   setsvalue2s(L, L->top, luaT_objtypestr(L, o));
 	api_incr_top(L);
+	lua_unlock(L);
   return;
+}
+
+void luaH_clear(lua_State* L, Table *t, int keep);
+
+LUA_API void (lua_cleartable) (lua_State* L, int idx, int keep) {
+	lua_lock(L);
+	TValue *o = index2value(L, idx);
+	api_check(L, ttistable(o), "table expected");
+	Table *t = hvalue(o);
+	/* hehe */
+	luaH_clear(L, t, keep); 
+	lua_unlock(L);
 }
 
 #if 0

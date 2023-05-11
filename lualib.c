@@ -37,19 +37,19 @@
 #include <string.h>
 //included "lauxlib.h" 
 #if !defined(MAX_SIZET)
-#define MAX_SIZET	((size_t)(~(size_t)0))
+#define MAX_SIZET ((size_t)(~(size_t)0))
 #endif
-#define LEVELS1	10	
-#define LEVELS2	11	
+#define LEVELS1 10 
+#define LEVELS2 11 
 static void pushfuncname (lua_State *L, lua_Debug *ar) {
-	// function argument at the top of the stack is required!
+ // function argument at the top of the stack is required!
   if (*ar->namewhat != '\0')  
     lua_pushfstring(L, "%s '%s'", ar->namewhat, ar->name);  
   else if (*ar->what == 'm')  
       lua_pushliteral(L, "main chunk");
   else if (*ar->what != 'C')  
     lua_pushfstring(L, "function <%s:%d>", ar->short_src, ar->linedefined);
-	else  
+ else  
     lua_pushliteral(L, "?");
 }
 static int lastlevel (lua_State *L) {
@@ -91,16 +91,16 @@ LUALIB_API void luaL_traceback (lua_State *L, lua_State *L1,
       else
         lua_pushfstring(L, "\n\t%s:%d: in ", ar.short_src, ar.currentline);
       luaL_addvalue(&b);
-			if (ar.what[0] == 'C') {
-				int oldtop = lua_gettop(L);
-      	lua_getinfo(L1, "f", &ar); // get function object
-				if (oldtop == lua_gettop(L)) goto fallback;// some shit
-				luaL_addvalue(&b);
-  			luaL_addstring(&b, " aka ");
-			}
-			fallback:
-     	pushfuncname(L, &ar);
-			//lua_remove(L, -2); // remove it
+   if (ar.what[0] == 'C') {
+    int oldtop = lua_gettop(L);
+       lua_getinfo(L1, "f", &ar); // get function object
+    if (oldtop == lua_gettop(L)) goto fallback;// some shit
+    luaL_addvalue(&b);
+     luaL_addstring(&b, " aka ");
+   }
+   fallback:
+      pushfuncname(L, &ar);
+   //lua_remove(L, -2); // remove it
       luaL_addvalue(&b);
       if (ar.istailcall)
         luaL_addstring(&b, "\n\t(...tail calls...)");
@@ -113,10 +113,10 @@ LUALIB_API int luaL_argerror (lua_State *L, int arg, const char *extramsg) {
   if (!lua_getstack(L, 0, &ar))  
     return luaL_error(L, "bad argument #%d (%s)", arg, extramsg);
   lua_getinfo(L, "Sn", &ar);
-	if (ar.name == NULL) {
-		pushfuncname(L, &ar);
+ if (ar.name == NULL) {
+  pushfuncname(L, &ar);
     ar.name = lua_tostring(L, -1);
-	}
+ }
   if (strcmp(ar.namewhat, "method") == 0) {
     arg--;  
     if (arg == 0)  
@@ -127,7 +127,7 @@ LUALIB_API int luaL_argerror (lua_State *L, int arg, const char *extramsg) {
 LUALIB_API int luaL_typeerror (lua_State *L, int arg, const char *tname) {
   const char *msg;
   const char *typearg;  
-	typearg = lua_objtypename(L, arg);  
+ typearg = lua_objtypename(L, arg);  
   msg = lua_pushfstring(L, "%s expected, got %s", tname, typearg);
   return luaL_argerror(L, arg, msg);
 }
@@ -151,8 +151,8 @@ LUALIB_API void luaL_where (lua_State *L, int level) {
       lua_pushfstring(L, "%s:%d: ", ar.short_src, ar.currentline);
       return;
     }
-  	lua_pushfstring(L, "%s: ", ar.what);  
-		return;
+   lua_pushfstring(L, "%s: ", ar.what);  
+  return;
   }
   lua_pushfstring(L, "");  
 }
@@ -166,10 +166,10 @@ LUALIB_API int luaL_error (lua_State *L, const char *fmt, ...) {
   return lua_error(L);
 }
 LUALIB_API int luaL_fileresult (lua_State *L, int, const char*) {
-	luaL_error(L, "LuaL_fileresult is ABI deprecated!");
+ luaL_error(L, "LuaL_fileresult is ABI deprecated!");
 }
 LUALIB_API int luaL_execresult (lua_State *L, int) {
-	luaL_error(L, "LuaL_execresult is ABI deprecated!");
+ luaL_error(L, "LuaL_execresult is ABI deprecated!");
 }
 LUALIB_API int luaL_newmetatable (lua_State *L, const char *tname) {
   if (luaL_getmetatable(L, tname) != LUA_TNIL)  
@@ -183,10 +183,10 @@ LUALIB_API int luaL_newmetatable (lua_State *L, const char *tname) {
   return 1;
 }
 LUALIB_API void luaL_setmetatable (lua_State *L, const char *tname) {
-	int t = luaL_getmetatable(L, tname);
+ int t = luaL_getmetatable(L, tname);
   if (luai_unlikely(t != LUA_TTABLE))
-		luaL_error(L, "%s is not %s metatable!", tname, 
-			(t != LUA_TNONE && t != LUA_TNIL) ? "a valid" : "existed");
+  luaL_error(L, "%s is not %s metatable!", tname, 
+   (t != LUA_TNONE && t != LUA_TNIL) ? "a valid" : "existed");
   lua_setmetatable(L, -2);
 }
 LUALIB_API void *luaL_testudata (lua_State *L, int ud, const char *tname) {
@@ -231,7 +231,7 @@ LUALIB_API void luaL_checktype (lua_State *L, int arg, int t) {
     tag_error(L, arg, t);
 }
 LUALIB_API void luaL_checkany (lua_State *L, int arg) {
-	int t = lua_type(L, arg);
+ int t = lua_type(L, arg);
   if (l_unlikely(t == LUA_TNONE || t == LUA_TNIL))
     luaL_argerror(L, arg, "value expected");
 }
@@ -277,7 +277,7 @@ LUALIB_API lua_Integer luaL_optinteger (lua_State *L, int arg,
                                                       lua_Integer def) {
   return luaL_opt(L, luaL_checkinteger, arg, def);
 }
-#define freelist	(LUA_RIDX_LAST + 1)
+#define freelist (LUA_RIDX_LAST + 1)
 LUALIB_API int luaL_ref (lua_State *L, int t) {
   int ref;
   if (lua_isnil(L, -1)) {
@@ -431,7 +431,7 @@ LUALIB_API int luaL_getsubtable (lua_State *L, int idx, const char *fname) {
 LUALIB_API void luaL_requiref (lua_State *L, const char *modname,
                                lua_CFunction openf, int glb) {
   luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
-	lua_assert(lua_type(L, -1) == LUA_TTABLE);
+ lua_assert(lua_type(L, -1) == LUA_TTABLE);
   lua_getfield(L, -1, modname);  
   if (!lua_toboolean(L, -1)) {  
     lua_pop(L, 1);  
@@ -465,10 +465,10 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
     return realloc(ptr, nsize);
 }
 static int panic (lua_State *L) {
-	luaL_traceback(L, L, lua_tostring(L, -1), 1);
-	lua_writestringerror(
-		"PANIC: Unprotected call to Lua API! \nPANIC: %s!\n",
-	 	lua_tostring(L, -1));
+ luaL_traceback(L, L, lua_tostring(L, -1), 1);
+ lua_writestringerror(
+  "PANIC: Unprotected call to Lua API! \nPANIC: %s!\n",
+   lua_tostring(L, -1));
   return 0;  
 }
 LUALIB_API lua_State *luaL_newstate (void) {
@@ -519,22 +519,22 @@ static int luaB_warn (lua_State *L) {
 }
 #include <math.h>
 static int luaB_tonumber (lua_State *L) {
-	int t = lua_type(L, 1);
-	switch (t) {
-		case LUA_TNUMBER :
-		lua_settop(L, 1);
-		return 1;
-		case LUA_TSTRING:
-		if (!lua_stringtonumber(L, lua_tostring(L, -1)))
-			lua_pushnil(L);
-		return 1;
-		case LUA_TBOOLEAN:
-	 	lua_pushnumber(L, lua_toboolean(L, -1));
-		return 1;
-		default:
-	 	lua_pushnil(L);
-		return 1;
-	}
+ int t = lua_type(L, 1);
+ switch (t) {
+  case LUA_TNUMBER :
+  lua_settop(L, 1);
+  return 1;
+  case LUA_TSTRING:
+  if (!lua_stringtonumber(L, lua_tostring(L, -1)))
+   lua_pushnil(L);
+  return 1;
+  case LUA_TBOOLEAN:
+   lua_pushnumber(L, lua_toboolean(L, -1));
+  return 1;
+  default:
+   lua_pushnil(L);
+  return 1;
+ }
 }
 static int luaB_error (lua_State *L) {
   int level = (int)luaL_optinteger(L, 2, 1);
@@ -549,28 +549,28 @@ static int luaB_error (lua_State *L) {
 static int luaB_getmetatable (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   if (!lua_getmetatable(L, 1)) return 0;  
-	lua_pushstring(L, "__metatable");
-	if (lua_rawget(L, -2) == LUA_TNIL) {
-		lua_pop(L, 1);
-	}
+ lua_pushstring(L, "__metatable");
+ if (lua_rawget(L, -2) == LUA_TNIL) {
+  lua_pop(L, 1);
+ }
   return 1;
 }
 static int luaB_setmetatable (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   luaL_argexpected(L, lua_istable(L, 2) || lua_isnoneornil(L, 2), 2, "nil or table");
   lua_settop(L, 2);
-	if (lua_getmetatable(L, 1)) {
-		lua_pushstring(L, "__metatable");
-		if (lua_rawget(L, -2) == LUA_TNIL) {
-			lua_pop(L, 2);
-		} else luaL_error(L, "attempt to change protected metatable");
-	}
+ if (lua_getmetatable(L, 1)) {
+  lua_pushstring(L, "__metatable");
+  if (lua_rawget(L, -2) == LUA_TNIL) {
+   lua_pop(L, 2);
+  } else luaL_error(L, "attempt to change protected metatable");
+ }
   lua_setmetatable(L, 1);
   return 1;
 }
 static int luaB_rawequal (lua_State *L) {
-	if (lua_gettop(L) < 2) luaL_error(L, "at least 2 arguments excepted!");
-	lua_pushboolean(L, lua_rawequal(L, 1, 2));
+ if (lua_gettop(L) < 2) luaL_error(L, "at least 2 arguments excepted!");
+ lua_pushboolean(L, lua_rawequal(L, 1, 2));
   return 1;
 }
 static int luaB_rawlen (lua_State *L) {
@@ -661,14 +661,14 @@ static int luaB_collectgarbage (lua_State *L) {
   return 1;
 }
 static int luaB_rawtype (lua_State *L) {
-	if (lua_gettop(L) < 1) luaL_error(L, "bad argument #1 : value excepted");
+ if (lua_gettop(L) < 1) luaL_error(L, "bad argument #1 : value excepted");
   lua_pushstring(L, lua_typename(L, lua_type(L, 1)));
   return 1;
 }
 static int luaB_type (lua_State *L) {
-	if (lua_gettop(L) < 1) luaL_error(L, "bad argument #1 : value excepted");
-	lua_pushobjtype(L, 1);
-	return 1;
+ if (lua_gettop(L) < 1) luaL_error(L, "bad argument #1 : value excepted");
+ lua_pushobjtype(L, 1);
+ return 1;
 }
 static int luaB_next (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
@@ -725,7 +725,7 @@ static int load_aux (lua_State *L, int status, int envidx) {
     return 2;  
   }
 }
-#define RESERVEDSLOT	5
+#define RESERVEDSLOT 5
 static const char *generic_reader (lua_State *L, void *ud, size_t *size) {
   (void)(ud);  
   luaL_checkstack(L, 2, "too many nested functions");
@@ -763,8 +763,8 @@ static int luaB_assert (lua_State *L) {
   if (l_likely(lua_toboolean(L, 1)))  
     return lua_gettop(L);  
   else {  
-		if (lua_gettop(L) >= 1) 
-    	lua_remove(L, 1);  
+  if (lua_gettop(L) >= 1) 
+     lua_remove(L, 1);  
     lua_pushliteral(L, "assertion failed!");  
     lua_settop(L, 1);  
     return luaB_error(L);  
@@ -813,9 +813,9 @@ static int luaB_xpcall (lua_State *L) {
   return finishpcall(L, status, 2);
 }
 static int luaB_tostring (lua_State *L) {
-	size_t len = 0;
+ size_t len = 0;
   luaL_tolstring(L, 1, &len);
-	if (len <= 0) lua_pushliteral(L, "");
+ if (len <= 0) lua_pushliteral(L, "");
   return 1;
 }
 static const luaL_Reg base_funcs[] = {
@@ -938,10 +938,10 @@ static int luaB_cowrap (lua_State *L) {
 static int luaB_yield (lua_State *L) {
   return lua_yield(L, lua_gettop(L));
 }
-#define COS_RUN		0
-#define COS_DEAD	1
-#define COS_YIELD	2
-#define COS_NORM	3
+#define COS_RUN  0
+#define COS_DEAD 1
+#define COS_YIELD 2
+#define COS_NORM 3
 static const char *const statname[] =
   {"running", "dead", "suspended", "normal"};
 static int auxstatus (lua_State *L, lua_State *co) {
@@ -1119,23 +1119,23 @@ static int db_getinfo (lua_State *L) {
   return 1;  
 }
 static int db_getfname(lua_State* L) {
-	luaL_checktype(L, 1, LUA_TFUNCTION);
-	lua_settop(L, 1);
-	lua_pushvalue(L, 1);
-	lua_Debug ar;
-	lua_getinfo(L, ">nS", &ar);
-	if (ar.namewhat[0] != '\0') {
-		lua_pushfstring(L, "%s '%s'", ar.namewhat, ar.name);
-	} else if (ar.what[0] == 'C') { // C code
-		lua_pushfstring(L, "C function:(%p)", lua_topointer(L, 1));
-	} else if (ar.what[0] == 'm') { // ???
-		lua_pushfstring(L, "main chunk:[in %s]", ar.source);
-	} else if (ar.what[0] == 'L') { // lua code
-		lua_pushfstring(L, "function:%s[in %s]", ar.name, ar.source);
-	} else {
-		lua_pushfstring(L, "function:(%p)", lua_topointer(L, 1));
-	}
-	return 1;
+ luaL_checktype(L, 1, LUA_TFUNCTION);
+ lua_settop(L, 1);
+ lua_pushvalue(L, 1);
+ lua_Debug ar;
+ lua_getinfo(L, ">nS", &ar);
+ if (ar.namewhat[0] != '\0') {
+  lua_pushfstring(L, "%s '%s'", ar.namewhat, ar.name);
+ } else if (ar.what[0] == 'C') { // C code
+  lua_pushfstring(L, "C function:(%p)", lua_topointer(L, 1));
+ } else if (ar.what[0] == 'm') { // ???
+  lua_pushfstring(L, "main chunk:[in %s]", ar.source);
+ } else if (ar.what[0] == 'L') { // lua code
+  lua_pushfstring(L, "function:%s[in %s]", ar.name, ar.source);
+ } else {
+  lua_pushfstring(L, "function:(%p)", lua_topointer(L, 1));
+ }
+ return 1;
 }
 static int auxupvalue (lua_State *L, int get) {
   const char *name;
@@ -1276,7 +1276,7 @@ static int db_traceback (lua_State *L) {
   return 1;
 }
 static const luaL_Reg dblib[] = {
-	#if !LUA_NO_UNSAFE
+ #if !LUA_NO_UNSAFE
   {"gethook", db_gethook},
   {"getmetatable", db_getmetatable},
   {"getupvalue", db_getupvalue},
@@ -1284,7 +1284,7 @@ static const luaL_Reg dblib[] = {
   {"upvalueid", db_upvalueid},
   {"setmetatable", db_setmetatable},
   {"setupvalue", db_setupvalue},
-	#endif
+ #endif
   {"getinfo", db_getinfo},
   {"sethook", db_sethook},
   {"traceback", db_traceback},
@@ -1303,7 +1303,7 @@ LUAMOD_API int luaopen_debug (lua_State *L) {
 #include <time.h>
 //included "string.h" 
 #undef PI
-#define PI	(l_mathop(3.141592653589793238462643383279502884))
+#define PI (l_mathop(3.141592653589793238462643383279502884))
 static int math_abs (lua_State *L) {
   if (lua_isinteger(L, 1)) {
     lua_Integer n = lua_tointeger(L, 1);
@@ -1480,22 +1480,22 @@ static int math_type (lua_State *L) {
   }
   return 1;
 }
-#define FIGS	l_floatatt(MANT_DIG)
+#define FIGS l_floatatt(MANT_DIG)
 #if FIGS > 64
 #undef FIGS
-#define FIGS	64
+#define FIGS 64
 #endif
 #if !defined(LUA_RAND32) && !defined(Rand64)
 #if (ULONG_MAX >> 31 >> 31) >= 3
-#define Rand64		unsigned long
+#define Rand64  unsigned long
 #elif !defined(LUA_USE_C89) && defined(LLONG_MAX)
-#define Rand64		unsigned long long
+#define Rand64  unsigned long long
 #elif (LUA_MAXUNSIGNED >> 31 >> 31) >= 3
-#define Rand64		lua_Unsigned
+#define Rand64  lua_Unsigned
 #endif
 #endif
 #if defined(Rand64)  
-#define trim64(x)	((x) & 0xffffffffffffffffu)
+#define trim64(x) ((x) & 0xffffffffffffffffu)
 static Rand64 rotl (Rand64 x, int n) {
   return (x << n) | (trim64(x) >> (64 - n));
 }
@@ -1511,14 +1511,14 @@ static Rand64 nextrand (Rand64 *state) {
   state[3] = rotl(state3, 45);
   return res;
 }
-#define shift64_FIG	(64 - FIGS)
-#define scaleFIG	(l_mathop(0.5) / ((Rand64)1 << (FIGS - 1)))
+#define shift64_FIG (64 - FIGS)
+#define scaleFIG (l_mathop(0.5) / ((Rand64)1 << (FIGS - 1)))
 static lua_Number I2d (Rand64 x) {
   return (lua_Number)(trim64(x) >> shift64_FIG) * scaleFIG;
 }
-#define I2UInt(x)	((lua_Unsigned)trim64(x))
-#define Int2I(x)	((Rand64)(x))
-#else	
+#define I2UInt(x) ((lua_Unsigned)trim64(x))
+#define Int2I(x) ((Rand64)(x))
+#else 
 #if LUAI_IS32INT
 typedef unsigned int lu_int32;
 #else
@@ -1528,7 +1528,7 @@ typedef struct Rand64 {
   lu_int32 h;  
   lu_int32 l;  
 } Rand64;
-#define trim32(x)	((x) & 0xffffffffu)
+#define trim32(x) ((x) & 0xffffffffu)
 static Rand64 packI (lu_int32 h, lu_int32 l) {
   Rand64 result;
   result.h = h;
@@ -1577,17 +1577,17 @@ static Rand64 nextrand (Rand64 *state) {
   state[3] = rotl1(state[3], 45);
   return res;
 }
-#define UONE		((lu_int32)1)
+#define UONE  ((lu_int32)1)
 #if FIGS <= 32
 #define scaleFIG       (l_mathop(0.5) / (UONE << (FIGS - 1)))
 static lua_Number I2d (Rand64 x) {
   lua_Number h = (lua_Number)(trim32(x.h) >> (32 - FIGS));
   return h * scaleFIG;
 }
-#else	
+#else 
 #define scaleFIG      (l_mathop(1.0) / (UONE << 30) / l_mathop(8.0) / (UONE << (FIGS - 33)))
-#define shiftLOW	(64 - FIGS)
-#define shiftHI		((lua_Number)(UONE << (FIGS - 33)) * l_mathop(2.0))
+#define shiftLOW (64 - FIGS)
+#define shiftHI  ((lua_Number)(UONE << (FIGS - 33)) * l_mathop(2.0))
 static lua_Number I2d (Rand64 x) {
   lua_Number h = (lua_Number)trim32(x.h) * shiftHI;
   lua_Number l = (lua_Number)(trim32(x.l) >> shiftLOW);
@@ -1800,11 +1800,11 @@ LUAMOD_API int luaopen_math (lua_State *L) {
 //included "stdlib.h" 
 //included "string.h" 
 #if !defined(LUA_MAXCAPTURES)
-#define LUA_MAXCAPTURES		32
+#define LUA_MAXCAPTURES  32
 #endif
-#define uchar(c)	((unsigned char)(c))
-#define MAX_SIZET	((size_t)(~(size_t)0))
-#define MAXSIZE  	(sizeof(size_t) < sizeof(int) ? MAX_SIZET : (size_t)(INT_MAX))
+#define uchar(c) ((unsigned char)(c))
+#define MAX_SIZET ((size_t)(~(size_t)0))
+#define MAXSIZE   (sizeof(size_t) < sizeof(int) ? MAX_SIZET : (size_t)(INT_MAX))
 static int str_len (lua_State *L) {
   size_t l;
   luaL_checklstring(L, 1, &l);
@@ -1951,14 +1951,14 @@ static int str_dump (lua_State *L) {
   luaL_pushresult(&state.B);
   return 1;
 }
-#if defined(LUA_NOCVTS2N)	
+#if defined(LUA_NOCVTS2N) 
 static const luaL_Reg stringmetamethods[] = {
   {"__index", NULL},  
   {NULL, NULL}
 };
-#endif		
-#define CAP_UNFINISHED	(-1)
-#define CAP_POSITION	(-2)
+#endif  
+#define CAP_UNFINISHED (-1)
+#define CAP_POSITION (-2)
 typedef struct MatchState {
   const char *src_init;  
   const char *src_end;  
@@ -1973,10 +1973,10 @@ typedef struct MatchState {
 } MatchState;
 static const char *match (MatchState *ms, const char *s, const char *p);
 #if !defined(MAXCCALLS)
-#define MAXCCALLS	200
+#define MAXCCALLS 200
 #endif
-#define L_ESC		'%'
-#define SPECIALS	"^$*+?.([%-"
+#define L_ESC  '%'
+#define SPECIALS "^$*+?.([%-"
 static int check_capture (MatchState *ms, int l) {
   l -= '1';
   if (l_unlikely(l < 0 || l >= ms->level ||
@@ -2502,9 +2502,9 @@ static int str_gsub (lua_State *L) {
   lua_pushinteger(L, n);  
   return 2;
 }
-#if !defined(lua_number2strx)	
-#define SIZELENMOD	(sizeof(LUA_NUMBER_FRMLEN)/sizeof(char))
-#define L_NBFD		((l_floatatt(MANT_DIG) - 1)%4 + 1)
+#if !defined(lua_number2strx) 
+#define SIZELENMOD (sizeof(LUA_NUMBER_FRMLEN)/sizeof(char))
+#define L_NBFD  ((l_floatatt(MANT_DIG) - 1)%4 + 1)
 static lua_Number adddigit (char *buff, int n, lua_Number x) {
   lua_Number dd = l_mathop(floor)(x);  
   int d = (int)dd;
@@ -2553,17 +2553,17 @@ static int lua_number2strx (lua_State *L, char *buff, int sz,
     return luaL_error(L, "modifiers for format '%%a'/'%%A' not implemented");
   return n;
 }
-#endif				
-#define MAX_ITEMF	(110 + l_floatatt(MAX_10_EXP))
-#define MAX_ITEM	120
+#endif    
+#define MAX_ITEMF (110 + l_floatatt(MAX_10_EXP))
+#define MAX_ITEM 120
 #if !defined(L_FMTFLAGSF)
-#define L_FMTFLAGSF	"-+#0 "
-#define L_FMTFLAGSX	"-#0"
-#define L_FMTFLAGSI	"-+0 "
-#define L_FMTFLAGSU	"-0"
-#define L_FMTFLAGSC	"-"
+#define L_FMTFLAGSF "-+#0 "
+#define L_FMTFLAGSX "-#0"
+#define L_FMTFLAGSI "-+0 "
+#define L_FMTFLAGSU "-0"
+#define L_FMTFLAGSC "-"
 #endif
-#define MAX_FORMAT	32
+#define MAX_FORMAT 32
 static void addquoted (luaL_Buffer *b, const char *s, size_t len) {
   luaL_addchar(b, '"');
   while (len--) {
@@ -2734,9 +2734,9 @@ static int str_format (lua_State *L) {
         case 'f':
           maxitem = MAX_ITEMF;  
           buff = luaL_prepbuffsize(&b, maxitem);
-					goto ft_3f;
+     goto ft_3f;
         case 'e': case 'E': case 'g': case 'G': 
-				ft_3f : {
+    ft_3f : {
           lua_Number n = luaL_checknumber(L, arg);
           checkformat(L, form, L_FMTFLAGSF, 1);
           addlenmod(form, LUA_NUMBER_FRMLEN);
@@ -2828,11 +2828,11 @@ LUAMOD_API int luaopen_string (lua_State *L) {
 //included "limits.h" 
 //included "stddef.h" 
 //included "string.h" 
-#define TAB_R	1			
-#define TAB_W	2			
-#define TAB_L	4			
-#define TAB_RW	(TAB_R | TAB_W)		
-#define aux_getn(L,n,w)	(checktab(L, n, (w) | TAB_L), luaL_len(L, n))
+#define TAB_R 1   
+#define TAB_W 2   
+#define TAB_L 4   
+#define TAB_RW (TAB_R | TAB_W)  
+#define aux_getn(L,n,w) (checktab(L, n, (w) | TAB_L), luaL_len(L, n))
 static int checkfield (lua_State *L, const char *key, int n) {
   lua_pushstring(L, key);
   return (lua_rawget(L, -n) != LUA_TNIL);
@@ -2975,8 +2975,8 @@ static int tunpack (lua_State *L) {
   return (int)n;
 }
 typedef unsigned int IdxT;
-#if !defined(l_randomizePivot)		//included "time.h" 
-#define sof(e)		(sizeof(e) / sizeof(unsigned int))
+#if !defined(l_randomizePivot)  //included "time.h" 
+#define sof(e)  (sizeof(e) / sizeof(unsigned int))
 static unsigned int l_randomizePivot (void) {
   clock_t c = clock();
   time_t t = time(NULL);
@@ -2988,8 +2988,8 @@ static unsigned int l_randomizePivot (void) {
     rnd += buff[i];
   return rnd;
 }
-#endif					
-#define RANLIMIT	100u
+#endif     
+#define RANLIMIT 100u
 static void set2 (lua_State *L, IdxT i, IdxT j) {
   lua_seti(L, 1, i);
   lua_seti(L, 1, j);
@@ -3107,6 +3107,20 @@ static int sort (lua_State *L) {
   }
   return 0;
 }
+static int tnew(lua_State* L) {
+ int a = luaL_checkinteger(L, 1);
+ int b = luaL_checkinteger(L, 2);
+ if (a < 0) luaL_argerror(L, 1, "number of array elements cannot be negative");
+ if (b < 0) luaL_argerror(L, 2, "number of hash table slots cannot be negative");
+ lua_createtable(L, a, b);
+ return 1;
+}
+static int tclear(lua_State* L) {
+ luaL_checktype(L, 1, LUA_TTABLE);
+ int keep = lua_toboolean(L, 2);
+ lua_cleartable(L, 1, keep);
+ return 0;
+}
 static const luaL_Reg tab_funcs[] = {
   {"concat", tconcat},
   {"insert", tinsert},
@@ -3115,6 +3129,8 @@ static const luaL_Reg tab_funcs[] = {
   {"remove", tremove},
   {"move", tmove},
   {"sort", sort},
+ {"new", tnew},
+ {"clear", tclear},
   {NULL, NULL}
 };
 LUAMOD_API int luaopen_table (lua_State *L) {
@@ -3126,14 +3142,14 @@ LUAMOD_API int luaopen_table (lua_State *L) {
 //included "limits.h" 
 //included "stdlib.h" 
 //included "string.h" 
-#define MAXUNICODE	0x10FFFFu
-#define MAXUTF		0x7FFFFFFFu
+#define MAXUNICODE 0x10FFFFu
+#define MAXUTF  0x7FFFFFFFu
 #if (UINT_MAX >> 30) >= 1
 typedef unsigned int utfint;
 #else
 typedef unsigned long utfint;
 #endif
-#define iscont(p)	((*(p) & 0xC0) == 0x80)
+#define iscont(p) ((*(p) & 0xC0) == 0x80)
 static lua_Integer u_posrelat (lua_Integer pos, size_t len) {
   if (pos >= 0) return pos;
   else if (0u - (size_t)pos > len) return 0;
@@ -3311,7 +3327,7 @@ static int iter_codes (lua_State *L) {
   lua_pushinteger(L, 0);
   return 3;
 }
-#define UTF8PATT	"[\0-\x7F\xC2-\xFD][\x80-\xBF]*"
+#define UTF8PATT "[\0-\x7F\xC2-\xFD][\x80-\xBF]*"
 static const luaL_Reg funcs[] = {
   {"offset", byteoffset},
   {"codepoint", codepoint},
@@ -3330,23 +3346,9 @@ LUAMOD_API int luaopen_utf8 (lua_State *L) {
 }
 // root include ./lualib/linit.c
 //included "stddef.h" 
-#define REQUIRE_FUNC "function require(name) local B local A A = loaded[name] if A then return A end A = preload[name] if A then A = A() loaded[name] = A return A end A, B = loadfile(name..'.lua') if not A then error('file '..name..' is not found!\n'..B) end A = A() loaded[name] = A return A end"
-LUA_API int luaopen_package(lua_State* L) {
-	// some compability hacks :o
-	lua_createtable(L, 0, 1);
-	lua_pushstring(L, "loaded");
-	lua_getfield(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
-	lua_rawset(L, -3);
-	lua_createtable(L, 0, 0);
-	lua_setfield(L, -2, "preload");
-	lua_setglobal(L, "package");
-	luaL_loadstring(L, REQUIRE_FUNC);
-	lua_setglobal(L, "require");
-	return 0;
-}
 static const luaL_Reg loadedlibs[] = {
   {LUA_GNAME, luaopen_base},
-	{"package", luaopen_package},
+ {"package", luaopen_package},
   {LUA_COLIBNAME, luaopen_coroutine},
   {LUA_TABLIBNAME, luaopen_table},
   {LUA_STRLIBNAME, luaopen_string},
@@ -3402,11 +3404,11 @@ static void newbox (lua_State *L) {
     luaL_setfuncs(L, boxmt, 0);  
   lua_setmetatable(L, -2);
 }
-#define buffonstack(B)	((B)->b != (B)->init.b)
+#define buffonstack(B) ((B)->b != (B)->init.b)
 #define FUNCHANDLER 
-#define checkbufferlevel(B, idx) 		lua_assert(buffonstack(B) ? lua_touserdata(B->L, idx) != NULL : lua_touserdata(B->L, idx) == (void*)B);
+#define checkbufferlevel(B, idx)   lua_assert(buffonstack(B) ? lua_touserdata(B->L, idx) != NULL : lua_touserdata(B->L, idx) == (void*)B);
 static size_t newbuffsize (luaL_Buffer *B, size_t sz) {
-	FUNCHANDLER
+ FUNCHANDLER
   size_t newsize = B->size * 2;  
   if (l_unlikely(MAX_SIZET - sz < B->n))  
     return luaL_error(B->L, "buffer too large");
@@ -3415,7 +3417,7 @@ static size_t newbuffsize (luaL_Buffer *B, size_t sz) {
   return newsize;
 }
 static char *prepbuffsize (luaL_Buffer *B, size_t sz, int boxidx) {
-	FUNCHANDLER
+ FUNCHANDLER
   checkbufferlevel(B, boxidx);
   if (B->size - B->n >= sz)  
     return B->b + B->n;
@@ -3440,11 +3442,11 @@ static char *prepbuffsize (luaL_Buffer *B, size_t sz, int boxidx) {
   }
 }
 LUALIB_API char *luaL_prepbuffsize (luaL_Buffer *B, size_t sz) {
-	FUNCHANDLER
+ FUNCHANDLER
   return prepbuffsize(B, sz, -1);
 }
 LUALIB_API void luaL_addlstring (luaL_Buffer *B, const char *s, size_t l) {
-	FUNCHANDLER
+ FUNCHANDLER
   if (l > 0) {  
     char *b = prepbuffsize(B, l, -1);
     memcpy(b, s, l * sizeof(char));
@@ -3452,11 +3454,11 @@ LUALIB_API void luaL_addlstring (luaL_Buffer *B, const char *s, size_t l) {
   }
 }
 LUALIB_API void luaL_addstring (luaL_Buffer *B, const char *s) {
-	FUNCHANDLER
+ FUNCHANDLER
   luaL_addlstring(B, s, strlen(s));
 }
 LUALIB_API void luaL_pushresult (luaL_Buffer *B) {
-	FUNCHANDLER
+ FUNCHANDLER
   lua_State *L = B->L;
   checkbufferlevel(B, -1);
   lua_pushlstring(L, B->b, B->n);
@@ -3465,23 +3467,23 @@ LUALIB_API void luaL_pushresult (luaL_Buffer *B) {
   lua_remove(L, -2);  
 }
 LUALIB_API void luaL_pushresultsize (luaL_Buffer *B, size_t sz) {
-	FUNCHANDLER
+ FUNCHANDLER
   luaL_addsize(B, sz);
   luaL_pushresult(B);
 }
 LUALIB_API void luaL_addvalue (luaL_Buffer *B) {
-	FUNCHANDLER
+ FUNCHANDLER
   lua_State *L = B->L;
   size_t len;
   const char *s = luaL_tolstring(L, -1, &len);
-	lua_remove(L, -2);
+ lua_remove(L, -2);
   char *b = prepbuffsize(B, len, -2);
   memcpy(b, s, len * sizeof(char));
   luaL_addsize(B, len);
   lua_pop(L, 1);  
 }
 LUALIB_API void luaL_buffinit (lua_State *L, luaL_Buffer *B) {
-	FUNCHANDLER
+ FUNCHANDLER
   B->L = L;
   B->b = B->init.b;
   B->n = 0;
@@ -3489,7 +3491,7 @@ LUALIB_API void luaL_buffinit (lua_State *L, luaL_Buffer *B) {
   lua_pushlightuserdata(L, (void*)B);  
 }
 LUALIB_API char *luaL_buffinitsize (lua_State *L, luaL_Buffer *B, size_t sz) {
-	FUNCHANDLER
+ FUNCHANDLER
   luaL_buffinit(L, B);
   return prepbuffsize(B, sz, -1);
 }
@@ -3503,4 +3505,300 @@ LUALIB_API void luaL_addgsub (luaL_Buffer *b, const char *s,
     s = wild + l;  
   }
   luaL_addstring(b, s);  
+}
+// root include ./lualib/lpackage.c
+//included "assert.h" 
+//included "limits.h" 
+//included "stdlib.h" 
+//included "string.h" 
+// Wrapper this around lua source string in C file
+// In case preprocessing is done, this will be inlined directly as precompiled bytecode :D
+#define LUA_BCDEF(NAME, SRC) static const char BC_##NAME##_DATA[] = SRC;static const size_t BC_##NAME##_SIZE = sizeof(BC_##NAME##_DATA);
+#if defined(COMPILED_BYTECODE)
+ #define INTERNAL_MODE '\033'
+ #define _TOKENIZE(A) #A
+ #define LUA_BCLOAD(L, NAME) luaL_loadbufferx(L, BC_##NAME##_DATA, BC_##NAME##_SIZE, _TOKENIZE(NAME), INTERNAL_MODE);
+#else
+// cause source always has main chunk (except for precompiled ones)
+ #define LUA_BCLOAD(L, NAME) luaL_loadbufferx(L, BC_##NAME##_DATA, BC_##NAME##_SIZE, NULL, "i"); lua_call(L, 0, 0);
+#endif
+static const char BC_require_DATA[] = {
+15, 
+ 0, 
+ 0, 
+ 0, 
+ 70, 
+ 0, 
+ 1, 
+ 1, 
+ 129, 
+ 4, 
+ 136, 
+ 114, 
+ 101, 
+ 113, 
+ 117, 
+ 105, 
+ 114, 
+ 101, 
+ 129, 
+ 1, 
+ 0, 
+ 0, 
+ 129, 
+ 128, 
+ 129, 
+ 129, 
+ 1, 
+ 0, 
+ 8, 
+ 167, 
+ 136, 
+ 0, 
+ 1, 
+ 0, 
+ 139, 
+ 1, 
+ 0, 
+ 0, 
+ 12, 
+ 1, 
+ 3, 
+ 0, 
+ 66, 
+ 1, 
+ 0, 
+ 0, 
+ 56, 
+ 0, 
+ 0, 
+ 128, 
+ 72, 
+ 1, 
+ 2, 
+ 0, 
+ 139, 
+ 1, 
+ 0, 
+ 1, 
+ 12, 
+ 1, 
+ 3, 
+ 0, 
+ 66, 
+ 1, 
+ 0, 
+ 0, 
+ 184, 
+ 2, 
+ 0, 
+ 128, 
+ 128, 
+ 1, 
+ 2, 
+ 0, 
+ 196, 
+ 1, 
+ 1, 
+ 2, 
+ 0, 
+ 1, 
+ 3, 
+ 0, 
+ 139, 
+ 1, 
+ 0, 
+ 0, 
+ 144, 
+ 1, 
+ 0, 
+ 2, 
+ 72, 
+ 1, 
+ 2, 
+ 0, 
+ 139, 
+ 1, 
+ 0, 
+ 2, 
+ 0, 
+ 2, 
+ 0, 
+ 0, 
+ 131, 
+ 130, 
+ 1, 
+ 0, 
+ 53, 
+ 2, 
+ 2, 
+ 0, 
+ 196, 
+ 1, 
+ 2, 
+ 3, 
+ 128, 
+ 0, 
+ 4, 
+ 0, 
+ 0, 
+ 1, 
+ 3, 
+ 0, 
+ 66, 
+ 129, 
+ 0, 
+ 0, 
+ 56, 
+ 3, 
+ 0, 
+ 128, 
+ 139, 
+ 1, 
+ 0, 
+ 4, 
+ 3, 
+ 130, 
+ 2, 
+ 0, 
+ 128, 
+ 2, 
+ 0, 
+ 0, 
+ 3, 
+ 3, 
+ 3, 
+ 0, 
+ 128, 
+ 3, 
+ 1, 
+ 0, 
+ 53, 
+ 2, 
+ 4, 
+ 0, 
+ 196, 
+ 1, 
+ 2, 
+ 1, 
+ 128, 
+ 1, 
+ 2, 
+ 0, 
+ 196, 
+ 1, 
+ 1, 
+ 2, 
+ 0, 
+ 1, 
+ 3, 
+ 0, 
+ 139, 
+ 1, 
+ 0, 
+ 0, 
+ 144, 
+ 1, 
+ 0, 
+ 2, 
+ 72, 
+ 1, 
+ 2, 
+ 0, 
+ 199, 
+ 1, 
+ 1, 
+ 0, 
+ 135, 
+ 4, 
+ 135, 
+ 108, 
+ 111, 
+ 97, 
+ 100, 
+ 101, 
+ 100, 
+ 4, 
+ 136, 
+ 112, 
+ 114, 
+ 101, 
+ 108, 
+ 111, 
+ 97, 
+ 100, 
+ 4, 
+ 137, 
+ 108, 
+ 111, 
+ 97, 
+ 100, 
+ 102, 
+ 105, 
+ 108, 
+ 101, 
+ 4, 
+ 133, 
+ 46, 
+ 108, 
+ 117, 
+ 97, 
+ 4, 
+ 134, 
+ 101, 
+ 114, 
+ 114, 
+ 111, 
+ 114, 
+ 4, 
+ 134, 
+ 102, 
+ 105, 
+ 108, 
+ 101, 
+ 32, 
+ 4, 
+ 144, 
+ 32, 
+ 105, 
+ 115, 
+ 32, 
+ 110, 
+ 111, 
+ 116, 
+ 32, 
+ 102, 
+ 111, 
+ 117, 
+ 110, 
+ 100, 
+ 33, 
+ 10, 
+ 129, 
+ 0, 
+ 0, 
+ 0, 
+ 128, 
+ 128, 
+ 128, 
+ 128, 
+ 128, 
+ 128, 
+ 128, 
+ 128, 
+ 128, 
+ };
+static const size_t BC_require_SIZE = 264;
+
+LUAMOD_API int (luaopen_package) (lua_State *L) {
+ // some compability hacks :o
+ lua_createtable(L, 0, 1);
+ lua_pushstring(L, "loaded");
+ lua_getfield(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
+ lua_rawset(L, -3);
+ lua_createtable(L, 0, 0);
+ lua_setfield(L, -2, "preload");
+ LUA_BCLOAD(L, require);
+ lua_setglobal(L, "require");
+ return 0;
 }

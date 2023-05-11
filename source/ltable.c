@@ -72,27 +72,16 @@
 ** When the original hash value is good, hashing by a power of 2
 ** avoids the cost of '%'.
 */
-#if 1
-#define hashpow2(t,n)		(gnode(t, fibonacci_hash((n), t->lsizenode)))
-#else
 #define hashpow2(t,n)		(gnode(t, lmod((n), sizenode(t))))
-#endif
 
 /*
 ** for other types, it is better to avoid modulo by power of 2, as
 ** they can have many 2 factors.
 */
-#if 0
 #define hashmod(t,n)	(gnode(t, ((n) % ((sizenode(t)-1)|1))))
-#else
-#define hashmod(t, n) (gnode(t, fibonacci_hash((n), t->lsizenode)))
-#endif
-
 
 #define hashstr(t,str)		hashpow2(t, (str)->hash)
 #define hashboolean(t,p)	hashpow2(t, p)
-
-
 
 #define dummynode		(&dummynode_)
 
@@ -633,6 +622,28 @@ static void rehash (lua_State *L, Table *t, const TValue *ek) {
 ** }=============================================================
 */
 
+void luaH_clear(lua_State* L, Table *t, int keep) {
+	if (t->array) {
+		if (keep & 1) { /* keep array? */
+			/* set nils in array part */
+			unsigned int asize = luaH_realasize(t);
+			unsigned int i = 0;
+  		for (; i < asize; i++) {  /* try first array part */
+				TValue *v = &t->array[i];
+				setnilvalue(v);
+			}
+    } else {
+			/* free array part */
+			luaM_freearray(L, t->array, luaH_realasize(t));
+			t->array = NULL;
+			t->alimit = 0;
+		}
+	}
+	// don't keep hash part (seems hard to do)
+	// TODO: Add possibility to actually keep it
+	freehash(L, t);
+  setnodevector(L, t, 0);
+}
 
 Table *luaH_new (lua_State *L) {
   GCObject *o = luaC_newobj(L, LUA_VTABLE, sizeof(Table));
@@ -651,7 +662,6 @@ void luaH_free (lua_State *L, Table *t) {
   luaM_freearray(L, t->array, luaH_realasize(t));
   luaM_free(L, t);
 }
-
 
 static Node *getfreepos (Table *t) {
   if (!isdummy(t)) {

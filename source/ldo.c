@@ -963,10 +963,11 @@ static void f_parser (lua_State *L, void *ud) {
   struct SParser *p = cast(struct SParser *, ud);
   int c = zgetc(p->z);  /* read first character */
   if (c == LUA_SIGNATURE[0]) {
-    checkmode(L, p->mode, "binary");
-    cl = luaU_undump(L, p->z, p->name);
-  }
-  else {
+		checkmode(L, p->mode, "binary");
+    cl = luaU_undump(L, p->z, p->name, 0);
+  } else if (p->mode && p->mode[0] == '\033') { /* internal bytecode */
+		cl = luaU_undump(L, p->z, p->name, 1); /* do not look for header */
+	} else {
     checkmode(L, p->mode, "text");
     cl = luaY_parser(L, p->z, &p->buff, &p->dyd, p->name, c);
   }

@@ -763,17 +763,6 @@ typedef struct Table {
 #define twoto(x)	(1<<(x))
 #define sizenode(t)	(twoto((t)->lsizenode))
 
-#include <stdio.h>
-static inline unsigned int fibonacci_hash(unsigned int s, unsigned int size)
-{
-	//assert(size < 32);
-	unsigned int res = size ?
-		(s * 11400714819323198485u) >> (64 - size) : 0;
-	//fprintf(stderr, "%li = %li hashed by %li\n", (long)res, (long)s, (long)twoto(size));
-	//assert(res <= (unsigned int)twoto(size));
-	return res;
-}
-
 /* size of buffer for 'luaO_utf8esc' function */
 #define UTF8BUFFSZ	8
 
