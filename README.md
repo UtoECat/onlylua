@@ -12,6 +12,7 @@ OnlyLua - minified and modified 5.4 lua, only luaCore and minified base librarie
 6. Some small perfomance extensions : 
 - typenames are GCFIXED now
 - `void lua_pushobjtype(lua_State* L, int idx)` returns it to the stack without expensive string table lookups.
+7. Some CAPI/lua baselib useful but not very compatible changes
 
 ## warning
 this project is still in development. If you have some issues - please send them to the `issues` on the GitHub page with this repository : [link](https://github.com/UtoECat/onlylua)
@@ -20,12 +21,14 @@ this project is still in development. If you have some issues - please send them
 This is a good base for your own standard lua library, or for embendding lua in trully safe or fast manner. (how i planned to use this)   
 
 # changes in baselib
-- get/setmetatable is allowed **ONLY** for the tables.
+- `get/setmetatable` is allowed **ONLY** for the tables.
+- `type()` now will return `__name` field in metatable (if exists)
+- `rawtype()` works like original type
 - removed strange (at my opinion) extensions in baselib
 - some functions was simplified
 - some functions was rewrited on lua itself (`require`)
-- table.new() function - create table with specified hash and array length
-- table.clear() function - cleanups table in fastest way possible
+- `table.new()` function - create table with specified hash and array length
+- `table.clear()` function - cleanups table in fastest way possible
 
 # CAPI extensions
 see `lextensions.c` file for them.
@@ -42,12 +45,11 @@ see `lextensions.c` file for them.
 # TODO and known issues, warnings, or additional info.
 - **WARNING** : **AVOID USAGE OF -fanalyzer compiler flag ON DEVICES WITH LESS THAN 4-6 GIGS OF RAM!** 
 - *TODO* Need to make doxygen documentation for CAPI and custom baselib :)
-- **DONE** ~~Need to fix A LOT compiler warnings in lua sources (.\_.)~~
-- *TODO* Look for and remove unused preprocessor macros
 - *TODO* test custom extensions a bit more...
-- **DONE?** ~~mark all private functions as static...~~
 - **ISSUE** this packed lua version is not very `c++-compat`. Some fixes are required.
 - **TODO** remove locale and stdio dependency!
+- **TODO** policy system implementation
+- **TODO** fix copyrights, optimize some libraries code
 - **TODO** Implement custom internal block allocator for GC objects
 
 - **HELPFUL TIP** Compile your project and lua sources with -flto and -O2/-O3! It becomes really faster. 
@@ -60,4 +62,10 @@ It's not very recommended to do that... But... Here is :
 - At the end you will see `luatest` in the root of the repository.
 - You can run example with lua file in argument, to test... something :)
 
-*It's should be possible to build this on windows, but some changes required in makefile for this : change compiler for suitable for you and name of the target as luatest.exe :)*
+## building for windows on windows
+- use same makefile
+## building for windows from unix
+- install `x86-64-w64-mingw32` compiler
+- run `make TARGET=Windows_NT`
+
+**WARNING! BUILDING FROM WINDOWS TO UNIX IS NOT IMPLEMENTED!**
