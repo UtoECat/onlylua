@@ -323,7 +323,10 @@ static int str_pack (lua_State *L) {
         totalsize += len + 1;
         break;
       }
-      case Kpadding: luaL_addchar(&b, LUAL_PACKPADBYTE);  /* FALLTHROUGH */
+      case Kpadding: 
+				luaL_addchar(&b, LUAL_PACKPADBYTE);  /* FALLTHROUGH */
+        arg--;  /* undo increment */
+        break;
       case Kpaddalign: case Knop:
         arg--;  /* undo increment */
         break;

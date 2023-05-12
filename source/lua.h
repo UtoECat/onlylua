@@ -12,9 +12,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 
-
 #include "luaconf.h"
-
 
 #define LUA_VERSION_MAJOR	"5"
 #define LUA_VERSION_MINOR	"5"

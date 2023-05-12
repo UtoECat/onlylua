@@ -498,6 +498,9 @@ LUAMOD_API int (luaopen_utf8) (lua_State *L);
 LUAMOD_API int (luaopen_math) (lua_State *L);
 #define LUA_PACKAGELIBNAME "package"
 LUAMOD_API int (luaopen_package) (lua_State *L);
+#define LUA_STRPACKLIBNAME "strpack"
+LUAMOD_API int luaopen_strpack(lua_State* L);
+// WARNING: debug library is NOT LOADED, and even PRELOADED!
 #define LUA_DBLIBNAME "debug"
 LUAMOD_API int (luaopen_debug) (lua_State *L);
 LUALIB_API void (luaL_openlibs) (lua_State *L);

@@ -757,6 +757,7 @@ typedef struct global_State {
   TString *strcache[STRCACHE_N][STRCACHE_M];  
   lua_WarnFunction warnf;  
   void *ud_warn;         
+ unsigned int policy;   
 } global_State;
 struct lua_State {
   CommonHeader;
@@ -9252,6 +9253,18 @@ LClosure *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
 // root include lstate.c
 //included "stddef.h" 
 //included "string.h" 
+#ifndef luapolicy_h
+#define LUAPOLICY_REGISTRY  1
+#define LUAPOLICY_BYTECODE  2
+#define LUAPOLICY_CONTROLGC 4
+#define LUAPOLICY_CANRUNGC  8
+#define LUAPOLICY_FILESYSTEM 16
+#define LUAPOLICY_EXTRADEBUG 32
+#define LUAPOLICY_POLICYCTL 65536
+#define LUAPOLICY_DEFAULT LUAPOLICY_CANRUNGC | LUAPOLICY_CONTROLGC 
+LUA_API int lua_getpolicy(lua_State* L, int level); 
+LUA_API void lua_setpolicy(lua_State* L);
+#endif
 typedef struct LX {
   lu_byte extra_[LUA_EXTRASPACE];
   lua_State l;
@@ -9376,6 +9389,7 @@ static void init_registry (lua_State *L, global_State *g) {
   setthvalue(L, &registry->array[LUA_RIDX_MAINTHREAD - 1], L);
   
   sethvalue(L, &registry->array[LUA_RIDX_GLOBALS - 1], luaH_new(L));
+ g->policy = LUAPOLICY_DEFAULT; 
 }
 static void f_luaopen (lua_State *L, void *ud) {
   global_State *g = G(L);

@@ -67,7 +67,7 @@ local sources = {
 local libsources = {
 	"lauxlib.c", "lbaselib.c", "lcorolib.c", "ldblib.c",
 	"lmathlib.c", "lstrlib.c", "ltablib.c", "lutf8lib.c",
-	"linit.c", "lbuffer.c", "lpackage.c"
+	"linit.c", "lbuffer.c", "lpackage.c", "lstrpack.c"
 }
 
 -- some useful functions

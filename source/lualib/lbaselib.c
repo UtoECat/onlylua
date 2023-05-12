@@ -336,6 +336,8 @@ static int luaB_load (lua_State *L) {
   int status;
   size_t l;
   const char *s = lua_tolstring(L, 1, &l);
+	lua_getfield(L, LUA_REGISTRYINDEX, "_BC_POLICY");
+
   const char *mode = luaL_optstring(L, 3, "bt");
   int env = (!lua_isnone(L, 4) ? 4 : 0);  /* 'env' index or 0 if no 'env' */
   if (s != NULL) {  /* loading a string? */

@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "lua.h"
+#include "luapolicy.h"
 
 #include "lapi.h"
 #include "ldebug.h"
@@ -222,8 +223,8 @@ static void init_registry (lua_State *L, global_State *g) {
   setthvalue(L, &registry->array[LUA_RIDX_MAINTHREAD - 1], L);
   /* registry[LUA_RIDX_GLOBALS] = new table (table of globals) */
   sethvalue(L, &registry->array[LUA_RIDX_GLOBALS - 1], luaH_new(L));
+	g->policy = LUAPOLICY_DEFAULT; 
 }
-
 
 /*
 ** open parts of the state that may cause memory-allocation errors.
