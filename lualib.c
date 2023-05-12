@@ -133,14 +133,8 @@ LUALIB_API int luaL_typeerror (lua_State *L, int arg, const char *tname) {
 }
 static void tag_error (lua_State *L, int arg, int tag) {
   const char *msg;
-  const char *typearg;  
-  if (luaL_getmetafield(L, arg, "__name") == LUA_TSTRING)
-    typearg = lua_tostring(L, -1);  
-  else if (lua_type(L, arg) == LUA_TLIGHTUSERDATA)
-    typearg = "light userdata";  
-  else
-    typearg = lua_typename(L, lua_type(L, arg));  
-  msg = lua_pushfstring(L, "%s expected, got %s", lua_typename(L, tag), typearg);
+  const char *typearg = lua_objtypename(L, arg);  
+  msg = lua_pushfstring(L, "%s expected, got %s (%s)", lua_typename(L, tag), typearg, lua_typename(L, lua_type(L, arg)));
   luaL_argerror(L, arg, msg);
 }
 LUALIB_API void luaL_where (lua_State *L, int level) {
@@ -486,6 +480,29 @@ LUALIB_API void luaL_checkversion_ (lua_State *L, lua_Number ver, size_t sz) {
     luaL_error(L, "version mismatch: app. needs %f, Lua core provides %f",
                   (LUAI_UACNUMBER)ver, (LUAI_UACNUMBER)v);
 }
+LUALIB_API const char* luaL_policyname(lua_State* L, int flag) {
+ switch (flag) {
+#define __TOLIT(a) #a
+#define DOF(name)case LUAPOLICY_##name : return __TOLIT(name);
+  DOF(REGISTRY)
+  DOF(BYTECODE)
+  DOF(CONTROLGC)
+  DOF(CANRUNGC)
+  DOF(FILESYSTEM)
+  DOF(EXTRADEBUG)
+  DOF(POLICYCTL)
+ #undef __TOLIT
+ #undef DOF
+ } 
+ return "unknown or complex";
+}
+LUALIB_API void luaL_checkpolicy(lua_State *L, int flag) {
+ if (luai_unlikely(!(lua_getpolicy(L) & flag))) {
+  luaL_error(L, "Access denied due to disabled policy flag %s!", 
+   luaL_policyname(L, flag)
+  );
+ }
+}
 // root include ./lualib/lbaselib.c
 #include <ctype.h>
 //included "stdio.h" 
@@ -619,6 +636,7 @@ static int luaB_collectgarbage (lua_State *L) {
       return 1;
     }
     case LUA_GCSTEP: {
+   luaL_checkpolicy(L, LUAPOLICY_CANRUNGC);
       int step = (int)luaL_optinteger(L, 2, 0);
       int res = lua_gc(L, o, step);
       checkvalres(res);
@@ -627,6 +645,7 @@ static int luaB_collectgarbage (lua_State *L) {
     }
     case LUA_GCSETPAUSE:
     case LUA_GCSETSTEPMUL: {
+   luaL_checkpolicy(L, LUAPOLICY_CONTROLGC);
       int p = (int)luaL_optinteger(L, 2, 0);
       int previous = lua_gc(L, o, p);
       checkvalres(previous);
@@ -640,17 +659,20 @@ static int luaB_collectgarbage (lua_State *L) {
       return 1;
     }
     case LUA_GCGEN: {
+   luaL_checkpolicy(L, LUAPOLICY_CONTROLGC);
       int minormul = (int)luaL_optinteger(L, 2, 0);
       int majormul = (int)luaL_optinteger(L, 3, 0);
       return pushmode(L, lua_gc(L, o, minormul, majormul));
     }
     case LUA_GCINC: {
+   luaL_checkpolicy(L, LUAPOLICY_CONTROLGC);
       int pause = (int)luaL_optinteger(L, 2, 0);
       int stepmul = (int)luaL_optinteger(L, 3, 0);
       int stepsize = (int)luaL_optinteger(L, 4, 0);
       return pushmode(L, lua_gc(L, o, pause, stepmul, stepsize));
     }
     default: {
+   luaL_checkpolicy(L, LUAPOLICY_CONTROLGC);
       int res = lua_gc(L, o);
       checkvalres(res);
       lua_pushinteger(L, res);
@@ -662,12 +684,12 @@ static int luaB_collectgarbage (lua_State *L) {
 }
 static int luaB_rawtype (lua_State *L) {
  if (lua_gettop(L) < 1) luaL_error(L, "bad argument #1 : value excepted");
-  lua_pushstring(L, lua_typename(L, lua_type(L, 1)));
+ lua_pushobjtype(L, 1, 0); // no meta checks
   return 1;
 }
 static int luaB_type (lua_State *L) {
  if (lua_gettop(L) < 1) luaL_error(L, "bad argument #1 : value excepted");
- lua_pushobjtype(L, 1);
+ lua_pushobjtype(L, 1, 1); // with meta check
  return 1;
 }
 static int luaB_next (lua_State *L) {
@@ -745,8 +767,11 @@ static int luaB_load (lua_State *L) {
   int status;
   size_t l;
   const char *s = lua_tolstring(L, 1, &l);
- lua_getfield(L, LUA_REGISTRYINDEX, "_BC_POLICY");
-  const char *mode = luaL_optstring(L, 3, "bt");
+ int canbc = lua_getpolicy(L) & LUAPOLICY_BYTECODE;
+  const char *mode = luaL_optstring(L, 3, canbc ? "bt" : "t");
+ if (strchr(mode, 'b')) {
+  luaL_checkpolicy(L, LUAPOLICY_BYTECODE);
+ }
   int env = (!lua_isnone(L, 4) ? 4 : 0);  
   if (s != NULL) {  
     const char *chunkname = luaL_optstring(L, 2, s);
@@ -3519,7 +3544,11 @@ LUALIB_API void luaL_addgsub (luaL_Buffer *b, const char *s,
 // cause source always has main chunk (except for precompiled ones)
 // Loads and runs bytecode with one argument from the top of the stack
 // (keeping it on the stack). Returns nothing
+#ifdef NOPACK
+#define LUA_BCLOAD(L, NAME) luaL_loadbufferx(L, BC_##NAME##_DATA, BC_##NAME##_SIZE, _TOKENIZE(NAME), "t") != LUA_OK ? lua_error(L) : 0;  lua_pushvalue(L, -2); lua_call(L, 1, 0);
+#else
 #define LUA_BCLOAD(L, NAME) luaL_loadbufferx(L, BC_##NAME##_DATA, BC_##NAME##_SIZE, _TOKENIZE(NAME), "b") != LUA_OK ? lua_error(L) : 0;  lua_pushvalue(L, -2); lua_call(L, 1, 0);
+#endif
 static const char BC_require_DATA[] = {
 27, 76, 117, 97, 85, 0, 25, 
  147, 13, 10, 26, 10, 4, 8, 
@@ -3591,6 +3620,17 @@ LUAMOD_API int (luaopen_package) (lua_State *L) {
 #define LUAL_PACKPADBYTE  0x00
 #endif
 #define MAXINTSIZE 16
+#define MAX_SIZET ((size_t)(~(size_t)0))
+#define MAXSIZE   (sizeof(size_t) < sizeof(int) ? MAX_SIZET : (size_t)(INT_MAX))
+static size_t posrelatI2 (lua_Integer pos, size_t len) {
+  if (pos > 0)
+    return (size_t)pos;
+  else if (pos == 0)
+    return 1;
+  else if (pos < -(lua_Integer)len)  
+    return 1;  
+  else return len + (size_t)pos + 1;
+}
 #define NB CHAR_BIT
 #define MC ((1 << NB) - 1)
 #define SZINT ((int)sizeof(lua_Integer))
@@ -3873,7 +3913,7 @@ static int str_unpack (lua_State *L) {
   const char *fmt = luaL_checkstring(L, 1);
   size_t ld;
   const char *data = luaL_checklstring(L, 2, &ld);
-  size_t pos = posrelatI(luaL_optinteger(L, 3, 1), ld) - 1;
+  size_t pos = posrelatI2(luaL_optinteger(L, 3, 1), ld) - 1;
   int n = 0;  
   luaL_argcheck(L, pos <= ld, 3, "initial position out of string");
   initheader(L, &h);

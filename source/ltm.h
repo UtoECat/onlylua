@@ -76,9 +76,9 @@ static const char *const luaT_typenames_[LUA_TOTALTYPES] = {
 };
 
 /* EXTENSION */
-LUAI_FUNC const char *luaT_objtypename (lua_State *L, const TValue *o);
+LUAI_FUNC const char *luaT_objtypename (lua_State *L, const TValue *o, int meta);
 /* EXTENSION */
-LUAI_FUNC TString* luaT_objtypestr (lua_State *L, const TValue *o);
+LUAI_FUNC TString* luaT_objtypestr (lua_State *L, const TValue *o, int meta);
 
 LUAI_FUNC const TValue *luaT_gettm (Table *events, TMS event, TString *ename);
 LUAI_FUNC const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o,

@@ -350,7 +350,7 @@ LUA_API void (lua_toclose) (lua_State *L, int idx);
 LUA_API void (lua_closeslot) (lua_State *L, int idx);
 
 /* extensions */
-LUA_API void (lua_pushobjtype)(lua_State* L, int idx);
+LUA_API void (lua_pushobjtype)(lua_State* L, int idx, int meta);
 LUA_API void (lua_cleartable) (lua_State* L, int idx, int keep);
 
 

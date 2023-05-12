@@ -405,7 +405,7 @@ LUA_API lua_Alloc (lua_getallocf) (lua_State *L, void **ud);
 LUA_API void      (lua_setallocf) (lua_State *L, lua_Alloc f, void *ud);
 LUA_API void (lua_toclose) (lua_State *L, int idx);
 LUA_API void (lua_closeslot) (lua_State *L, int idx);
-LUA_API void (lua_pushobjtype)(lua_State* L, int idx);
+LUA_API void (lua_pushobjtype)(lua_State* L, int idx, int meta);
 LUA_API void (lua_cleartable) (lua_State* L, int idx, int keep);
 #define lua_getextraspace(L) ((void *)((char *)(L) - LUA_EXTRASPACE))
 #define lua_tonumber(L,i) lua_tonumberx(L,(i),NULL)
@@ -610,6 +610,30 @@ LUALIB_API void (luaL_requiref) (lua_State *L, const char *modname, lua_CFunctio
 #if !defined(lua_writestringerror)
 #define lua_writestringerror(s,p)         (fprintf(stderr, (s), (p)))
 #endif
+#endif
+#ifndef luapolicy_h
+#define LUAPOLICY_REGISTRY  LUAPOLICY_REGISTRY
+enum {
+ LUAPOLICY_REGISTRY = 1,
+ LUAPOLICY_BYTECODE = 2,
+ LUAPOLICY_CONTROLGC = 4,
+ LUAPOLICY_CANRUNGC = 8,
+ LUAPOLICY_FILESYSTEM = 16,
+ LUAPOLICY_EXTRADEBUG = 32,
+ LUAPOLICY_POLICYCTL = 65536
+};
+#define LUAPOLICY_BYTECODE  LUAPOLICY_BYTECODE
+#define LUAPOLICY_CONTROLGC LUAPOLICY_CONTROLGC
+#define LUAPOLICY_CANRUNGC  LUAPOLICY_CANRUNGC
+#define LUAPOLICY_FILESYSTEM LUAPOLICY_FILESYSTEM
+#define LUAPOLICY_EXTRADEBUG LUAPOLICY_EXTRADEBUG
+#define LUAPOLICY_POLICYCTL LUAPOLICY_POLICYCTL
+#define LUAPOLICY_DEFAULT LUAPOLICY_CANRUNGC | LUAPOLICY_CONTROLGC 
+LUA_API int lua_getpolicy(lua_State* L); 
+#define lua_getsubpolicy(L, FLAG) (lua_getpolicy(L) & FLAG)
+LUA_API void lua_setpolicy(lua_State* L, int flags);
+LUALIB_API const char* luaL_policyname(lua_State* L, int flag);
+LUALIB_API void luaL_checkpolicy(lua_State *L, int flag);
 #endif
 #ifdef __cplusplus
 };

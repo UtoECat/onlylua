@@ -98,8 +98,9 @@ void luaE_setdebt (global_State *g, l_mem debt) {
 
 
 LUA_API int lua_setcstacklimit (lua_State *L, unsigned int limit) {
-  UNUSED(L); UNUSED(limit);
-  return LUAI_MAXCCALLS;  /* warning?? */
+  UNUSED(limit);
+	lua_warning(L, "C stack limit is compiletime constant", 0);
+  return LUAI_MAXCCALLS;
 }
 
 

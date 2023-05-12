@@ -87,9 +87,9 @@ const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
 ** Return the name of the type of an object. For tables and userdata
 ** with metatable, use their '__name' metafield, if present.
 */
-TString* luaT_objtypestr (lua_State *L, const TValue *o) {
+TString* luaT_objtypestr (lua_State *L, const TValue *o, int meta) {
 	Table *mt;
-  if ((ttistable(o) && (mt = hvalue(o)->metatable) != NULL) ||
+  if ((ttistable(o) && meta && (mt = hvalue(o)->metatable) != NULL) ||
       (ttisfulluserdata(o) && (mt = uvalue(o)->metatable) != NULL)) {
     const TValue *name = luaH_getshortstr(mt, TYPESTR(L));
     if (ttisstring(name))  /* is '__name' a string? */
@@ -98,8 +98,8 @@ TString* luaT_objtypestr (lua_State *L, const TValue *o) {
   return G(L)->typenames[ttype(o) + 1];  /* else use standard type name */
 }
 
-const char *luaT_objtypename (lua_State *L, const TValue *o) {
-	return getstr(luaT_objtypestr(L, o));
+const char *luaT_objtypename (lua_State *L, const TValue *o, int meta) {
+	return getstr(luaT_objtypestr(L, o, meta));
 }
 
 

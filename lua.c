@@ -555,8 +555,8 @@ static const char *const luaT_typenames_[LUA_TOTALTYPES] = {
   "string", "table", "function", "userdata", "thread",
   "upvalue", "proto" 
 };
-LUAI_FUNC const char *luaT_objtypename (lua_State *L, const TValue *o);
-LUAI_FUNC TString* luaT_objtypestr (lua_State *L, const TValue *o);
+LUAI_FUNC const char *luaT_objtypename (lua_State *L, const TValue *o, int meta);
+LUAI_FUNC TString* luaT_objtypestr (lua_State *L, const TValue *o, int meta);
 LUAI_FUNC const TValue *luaT_gettm (Table *events, TMS event, TString *ename);
 LUAI_FUNC const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o,
                                                        TMS event);
@@ -4467,7 +4467,7 @@ static const char *varinfo (lua_State *L, const TValue *o) {
 }
 static l_noret typeerror (lua_State *L, const TValue *o, const char *op,
                           const char *extra) {
-  const char *t = luaT_objtypename(L, o);
+  const char *t = luaT_objtypename(L, o, 1);
   luaG_runerror(L, "attempt to %s a %s value%s", op, t, extra);
 }
 l_noret luaG_typeerror (lua_State *L, const TValue *o, const char *op) {
@@ -4482,7 +4482,7 @@ l_noret luaG_callerror (lua_State *L, const TValue *o) {
 }
 l_noret luaG_forerror (lua_State *L, const TValue *o, const char *what) {
   luaG_runerror(L, "bad 'for' %s (number expected, got %s)",
-                   what, luaT_objtypename(L, o));
+                   what, luaT_objtypename(L, o, 1));
 }
 l_noret luaG_concaterror (lua_State *L, const TValue *p1, const TValue *p2) {
   if (ttisstring(p1) || cvt2str(p1)) p1 = p2;
@@ -4501,8 +4501,8 @@ l_noret luaG_tointerror (lua_State *L, const TValue *p1, const TValue *p2) {
   luaG_runerror(L, "number%s has no integer representation", varinfo(L, p2));
 }
 l_noret luaG_ordererror (lua_State *L, const TValue *p1, const TValue *p2) {
-  const char *t1 = luaT_objtypename(L, p1);
-  const char *t2 = luaT_objtypename(L, p2);
+  const char *t1 = luaT_objtypename(L, p1, 1);
+  const char *t2 = luaT_objtypename(L, p2, 1);
   if (strcmp(t1, t2) == 0)
     luaG_runerror(L, "attempt to compare two %s values", t1);
   else
@@ -9253,18 +9253,7 @@ LClosure *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
 // root include lstate.c
 //included "stddef.h" 
 //included "string.h" 
-#ifndef luapolicy_h
-#define LUAPOLICY_REGISTRY  1
-#define LUAPOLICY_BYTECODE  2
-#define LUAPOLICY_CONTROLGC 4
-#define LUAPOLICY_CANRUNGC  8
-#define LUAPOLICY_FILESYSTEM 16
-#define LUAPOLICY_EXTRADEBUG 32
-#define LUAPOLICY_POLICYCTL 65536
-#define LUAPOLICY_DEFAULT LUAPOLICY_CANRUNGC | LUAPOLICY_CONTROLGC 
-LUA_API int lua_getpolicy(lua_State* L, int level); 
-LUA_API void lua_setpolicy(lua_State* L);
-#endif
+//included "luapolicy.h" 
 typedef struct LX {
   lu_byte extra_[LUA_EXTRASPACE];
   lua_State l;
@@ -9297,8 +9286,9 @@ void luaE_setdebt (global_State *g, l_mem debt) {
   g->GCdebt = debt;
 }
 LUA_API int lua_setcstacklimit (lua_State *L, unsigned int limit) {
-  UNUSED(L); UNUSED(limit);
-  return LUAI_MAXCCALLS;  
+  UNUSED(limit);
+ lua_warning(L, "C stack limit is compiletime constant", 0);
+  return LUAI_MAXCCALLS;
 }
 CallInfo *luaE_extendCI (lua_State *L) {
   CallInfo *ci;
@@ -10444,9 +10434,9 @@ const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event) {
   }
   return (mt ? luaH_getshortstr(mt, G(L)->tmname[event]) : &G(L)->nilvalue);
 }
-TString* luaT_objtypestr (lua_State *L, const TValue *o) {
+TString* luaT_objtypestr (lua_State *L, const TValue *o, int meta) {
  Table *mt;
-  if ((ttistable(o) && (mt = hvalue(o)->metatable) != NULL) ||
+  if ((ttistable(o) && meta && (mt = hvalue(o)->metatable) != NULL) ||
       (ttisfulluserdata(o) && (mt = uvalue(o)->metatable) != NULL)) {
     const TValue *name = luaH_getshortstr(mt, TYPESTR(L));
     if (ttisstring(name))  
@@ -10454,8 +10444,8 @@ TString* luaT_objtypestr (lua_State *L, const TValue *o) {
   }
   return G(L)->typenames[ttype(o) + 1];  
 }
-const char *luaT_objtypename (lua_State *L, const TValue *o) {
- return getstr(luaT_objtypestr(L, o));
+const char *luaT_objtypename (lua_State *L, const TValue *o, int meta) {
+ return getstr(luaT_objtypestr(L, o, meta));
 }
 void luaT_callTM (lua_State *L, const TValue *f, const TValue *p1,
                   const TValue *p2, const TValue *p3) {
@@ -12320,16 +12310,45 @@ size_t luaZ_read (ZIO *z, void *b, size_t n) {
 #define lext_c
 //included "stdio.h" 
 //included "string.h" 
+#define ispseudo(i)  ((i) <= LUA_REGISTRYINDEX)
+static TValue *index2value2 (lua_State *L, int idx) {
+  CallInfo *ci = L->ci;
+  if (idx > 0) {
+    StkId o = ci->func + idx;
+    api_check(L, idx <= L->ci->top - (ci->func + 1), "unacceptable index");
+    if (o >= L->top) return &G(L)->nilvalue;
+    else return s2v(o);
+  }
+  else if (!ispseudo(idx)) {  
+    api_check(L, idx != 0 && -idx <= L->top - (ci->func + 1), "invalid index");
+    return s2v(L->top + idx);
+  }
+  else if (idx == LUA_REGISTRYINDEX)
+    return &G(L)->l_registry;
+  else {  
+    idx = LUA_REGISTRYINDEX - idx;
+    api_check(L, idx <= MAXUPVAL + 1, "upvalue index too large");
+    if (ttisCclosure(s2v(ci->func))) {  
+      CClosure *func = clCvalue(s2v(ci->func));
+      return (idx <= func->nupvalues) ? &func->upvalue[idx-1]
+                                      : &G(L)->nilvalue;
+    }
+    else {  
+      api_check(L, ttislcf(s2v(ci->func)), "caller not a C function");
+      return &G(L)->nilvalue;  
+    }
+  }
+}
     
 LUA_API const char* lua_objtypename(lua_State *L, int idx) {
-  const TValue *o = index2value(L, idx);
-  return luaT_objtypename(L, o);
+  const TValue *o = index2value2(L, idx);
+  return luaT_objtypename(L, o, 1);
 }
-LUA_API void lua_pushobjtype(lua_State* L, int idx) {
+LUA_API void lua_pushobjtype(lua_State* L, int idx, int meta) {
  lua_lock(L);
- const TValue *o = index2value(L, idx);
+ const TValue *o = index2value2(L, idx);
  api_checknelems(L, 1);
-  setsvalue2s(L, L->top, luaT_objtypestr(L, o));
+  setsvalue2s(L, L->top, luaT_objtypestr(L, o, meta));
  api_incr_top(L);
  lua_unlock(L);
   return;
@@ -12337,7 +12356,7 @@ LUA_API void lua_pushobjtype(lua_State* L, int idx) {
 void luaH_clear(lua_State* L, Table *t, int keep);
 LUA_API void (lua_cleartable) (lua_State* L, int idx, int keep) {
  lua_lock(L);
- TValue *o = index2value(L, idx);
+ TValue *o = index2value2(L, idx);
  api_check(L, ttistable(o), "table expected");
  Table *t = hvalue(o);
  
@@ -12364,3 +12383,10 @@ int luaC_getfixed(lua_State* L) {
 #else
 int luaC_getfixed(lua_State* L) {lua_createtable(L, 0, 0); return 1;}
 #endif
+LUA_API int lua_getpolicy(lua_State* L) {
+ return L->l_G->policy;
+} 
+LUA_API void lua_setpolicy(lua_State* L, int flags) {
+ L->l_G->policy = flags;
+ api_check(L, (flags >> 16) < 2, "Bad policy flag");
+}

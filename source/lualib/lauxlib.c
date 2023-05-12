@@ -21,7 +21,6 @@
 */
 
 #include "lua.h"
-
 #include "lauxlib.h"
 
 
@@ -148,14 +147,8 @@ LUALIB_API int luaL_typeerror (lua_State *L, int arg, const char *tname) {
 
 static void tag_error (lua_State *L, int arg, int tag) {
   const char *msg;
-  const char *typearg;  /* name for the type of the actual argument */
-  if (luaL_getmetafield(L, arg, "__name") == LUA_TSTRING)
-    typearg = lua_tostring(L, -1);  /* use the given type name */
-  else if (lua_type(L, arg) == LUA_TLIGHTUSERDATA)
-    typearg = "light userdata";  /* special name for messages */
-  else
-    typearg = lua_typename(L, lua_type(L, arg));  /* standard name */
-  msg = lua_pushfstring(L, "%s expected, got %s", lua_typename(L, tag), typearg);
+  const char *typearg = lua_objtypename(L, arg);  /* standard name */
+  msg = lua_pushfstring(L, "%s expected, got %s (%s)", lua_typename(L, tag), typearg, lua_typename(L, lua_type(L, arg)));
   luaL_argerror(L, arg, msg);
 }
 
@@ -623,4 +616,32 @@ LUALIB_API void luaL_checkversion_ (lua_State *L, lua_Number ver, size_t sz) {
                   (LUAI_UACNUMBER)ver, (LUAI_UACNUMBER)v);
 }
 
+#include "luapolicy.h"
+
 /* Policy functions */
+
+LUALIB_API const char* luaL_policyname(lua_State* L, int flag) {
+	switch (flag) {
+#define __TOLIT(a) #a
+#define DOF(name)case LUAPOLICY_##name : return __TOLIT(name);
+		DOF(REGISTRY)
+		DOF(BYTECODE)
+		DOF(CONTROLGC)
+		DOF(CANRUNGC)
+		DOF(FILESYSTEM)
+		DOF(EXTRADEBUG)
+		DOF(POLICYCTL)
+	#undef __TOLIT
+	#undef DOF
+	}	
+	return "unknown or complex";
+}
+
+LUALIB_API void luaL_checkpolicy(lua_State *L, int flag) {
+	if (luai_unlikely(!(lua_getpolicy(L) & flag))) {
+		luaL_error(L, "Access denied due to disabled policy flag %s!", 
+			luaL_policyname(L, flag)
+		);
+	}
+}
+

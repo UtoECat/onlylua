@@ -721,7 +721,7 @@ static const char *varinfo (lua_State *L, const TValue *o) {
 */
 static l_noret typeerror (lua_State *L, const TValue *o, const char *op,
                           const char *extra) {
-  const char *t = luaT_objtypename(L, o);
+  const char *t = luaT_objtypename(L, o, 1);
   luaG_runerror(L, "attempt to %s a %s value%s", op, t, extra);
 }
 
@@ -751,7 +751,7 @@ l_noret luaG_callerror (lua_State *L, const TValue *o) {
 
 l_noret luaG_forerror (lua_State *L, const TValue *o, const char *what) {
   luaG_runerror(L, "bad 'for' %s (number expected, got %s)",
-                   what, luaT_objtypename(L, o));
+                   what, luaT_objtypename(L, o, 1));
 }
 
 
@@ -781,8 +781,8 @@ l_noret luaG_tointerror (lua_State *L, const TValue *p1, const TValue *p2) {
 
 
 l_noret luaG_ordererror (lua_State *L, const TValue *p1, const TValue *p2) {
-  const char *t1 = luaT_objtypename(L, p1);
-  const char *t2 = luaT_objtypename(L, p2);
+  const char *t1 = luaT_objtypename(L, p1, 1);
+  const char *t2 = luaT_objtypename(L, p2, 1);
   if (strcmp(t1, t2) == 0)
     luaG_runerror(L, "attempt to compare two %s values", t1);
   else

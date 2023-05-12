@@ -16,10 +16,9 @@
 #include <string.h>
 
 #include "lua.h"
-
+#include "luapolicy.h"
 #include "lauxlib.h"
 #include "lualib.h"
-
 
 static int luaB_print (lua_State *L) {
   int n = lua_gettop(L);  /* number of arguments */
@@ -155,6 +154,8 @@ static int pushmode (lua_State *L, int oldmode) {
 */
 #define checkvalres(res) { if (res == -1) break; }
 
+#include "luapolicy.h"
+
 static int luaB_collectgarbage (lua_State *L) {
   static const char *const opts[] = {"stop", "restart", "collect",
     "count", "step", "setpause", "setstepmul",
@@ -172,6 +173,7 @@ static int luaB_collectgarbage (lua_State *L) {
       return 1;
     }
     case LUA_GCSTEP: {
+			luaL_checkpolicy(L, LUAPOLICY_CANRUNGC);
       int step = (int)luaL_optinteger(L, 2, 0);
       int res = lua_gc(L, o, step);
       checkvalres(res);
@@ -180,6 +182,7 @@ static int luaB_collectgarbage (lua_State *L) {
     }
     case LUA_GCSETPAUSE:
     case LUA_GCSETSTEPMUL: {
+			luaL_checkpolicy(L, LUAPOLICY_CONTROLGC);
       int p = (int)luaL_optinteger(L, 2, 0);
       int previous = lua_gc(L, o, p);
       checkvalres(previous);
@@ -193,17 +196,20 @@ static int luaB_collectgarbage (lua_State *L) {
       return 1;
     }
     case LUA_GCGEN: {
+			luaL_checkpolicy(L, LUAPOLICY_CONTROLGC);
       int minormul = (int)luaL_optinteger(L, 2, 0);
       int majormul = (int)luaL_optinteger(L, 3, 0);
       return pushmode(L, lua_gc(L, o, minormul, majormul));
     }
     case LUA_GCINC: {
+			luaL_checkpolicy(L, LUAPOLICY_CONTROLGC);
       int pause = (int)luaL_optinteger(L, 2, 0);
       int stepmul = (int)luaL_optinteger(L, 3, 0);
       int stepsize = (int)luaL_optinteger(L, 4, 0);
       return pushmode(L, lua_gc(L, o, pause, stepmul, stepsize));
     }
     default: {
+			luaL_checkpolicy(L, LUAPOLICY_CONTROLGC);
       int res = lua_gc(L, o);
       checkvalres(res);
       lua_pushinteger(L, res);
@@ -217,13 +223,13 @@ static int luaB_collectgarbage (lua_State *L) {
 
 static int luaB_rawtype (lua_State *L) {
 	if (lua_gettop(L) < 1) luaL_error(L, "bad argument #1 : value excepted");
-  lua_pushstring(L, lua_typename(L, lua_type(L, 1)));
+	lua_pushobjtype(L, 1, 0); // no meta checks
   return 1;
 }
 
 static int luaB_type (lua_State *L) {
 	if (lua_gettop(L) < 1) luaL_error(L, "bad argument #1 : value excepted");
-	lua_pushobjtype(L, 1);
+	lua_pushobjtype(L, 1, 1); // with meta check
 	return 1;
 }
 
@@ -336,9 +342,13 @@ static int luaB_load (lua_State *L) {
   int status;
   size_t l;
   const char *s = lua_tolstring(L, 1, &l);
-	lua_getfield(L, LUA_REGISTRYINDEX, "_BC_POLICY");
+	int canbc = lua_getpolicy(L) & LUAPOLICY_BYTECODE;
 
-  const char *mode = luaL_optstring(L, 3, "bt");
+  const char *mode = luaL_optstring(L, 3, canbc ? "bt" : "t");
+	if (strchr(mode, 'b')) {
+		luaL_checkpolicy(L, LUAPOLICY_BYTECODE);
+	}
+
   int env = (!lua_isnone(L, 4) ? 4 : 0);  /* 'env' index or 0 if no 'env' */
   if (s != NULL) {  /* loading a string? */
     const char *chunkname = luaL_optstring(L, 2, s);

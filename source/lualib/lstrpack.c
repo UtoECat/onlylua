@@ -32,6 +32,34 @@
 /* maximum size for the binary representation of an integer */
 #define MAXINTSIZE	16
 
+/*
+** Some sizes are better limited to fit in 'int', but must also fit in
+** 'size_t'. (We assume that 'lua_Integer' cannot be smaller than 'int'.)
+*/
+#define MAX_SIZET	((size_t)(~(size_t)0))
+
+#define MAXSIZE  \
+	(sizeof(size_t) < sizeof(int) ? MAX_SIZET : (size_t)(INT_MAX))
+
+
+/*
+** translate a relative initial string position
+** (negative means back from end): clip result to [1, inf).
+** The length of any string in Lua must fit in a lua_Integer,
+** so there are no overflows in the casts.
+** The inverted comparison avoids a possible overflow
+** computing '-pos'.
+*/
+static size_t posrelatI2 (lua_Integer pos, size_t len) {
+  if (pos > 0)
+    return (size_t)pos;
+  else if (pos == 0)
+    return 1;
+  else if (pos < -(lua_Integer)len)  /* inverted comparison */
+    return 1;  /* clip to 1 */
+  else return len + (size_t)pos + 1;
+}
+
 /* number of bits in a character */
 #define NB	CHAR_BIT
 
@@ -396,7 +424,7 @@ static int str_unpack (lua_State *L) {
   const char *fmt = luaL_checkstring(L, 1);
   size_t ld;
   const char *data = luaL_checklstring(L, 2, &ld);
-  size_t pos = posrelatI(luaL_optinteger(L, 3, 1), ld) - 1;
+  size_t pos = posrelatI2(luaL_optinteger(L, 3, 1), ld) - 1;
   int n = 0;  /* number of results */
   luaL_argcheck(L, pos <= ld, 3, "initial position out of string");
   initheader(L, &h);

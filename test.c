@@ -27,12 +27,13 @@ static int osclock (lua_State *L) {
 }
 
 static int getreg (lua_State *L) {
+	luaL_checkpolicy(L, LUAPOLICY_REGISTRY);
 	lua_pushvalue(L, LUA_REGISTRYINDEX);
   return 1;
 }
 
 static int stacktrace(lua_State* L) {
-	if (lua_isnone(L, 1)) lua_pushstring(L, "fuck");
+	if (lua_isnone(L, 1)) lua_pushstring(L, "?");
 	luaL_traceback(L, L, lua_tostring(L, -1), 1);
 	return 1;
 }
@@ -161,6 +162,9 @@ static int load_aux (lua_State *L, int status, int envidx) {
 static int luaB_loadfile (lua_State *L) {
   const char *fname = luaL_optstring(L, 1, NULL);
   const char *mode = luaL_optstring(L, 2, NULL);
+	if (fname) luaL_checkpolicy(L, LUAPOLICY_FILESYSTEM);
+	if (!mode) mode = "t";
+	if (strchr(mode, 'b')) luaL_checkpolicy(L, LUAPOLICY_BYTECODE);
   int env = (!lua_isnone(L, 3) ? 3 : 0);  /* 'env' index or 0 if no 'env' */
   int status = loadfilex(L, fname, mode);
   return load_aux(L, status, env);
@@ -173,8 +177,9 @@ static int dofilecont (lua_State *L, int d1, lua_KContext d2) {
 
 static int luaB_dofile (lua_State *L) {
   const char *fname = luaL_optstring(L, 1, NULL);
+	if (fname) luaL_checkpolicy(L, LUAPOLICY_FILESYSTEM);
   lua_settop(L, 1);
-  if (luai_unlikely(loadfilex(L, fname, 0) != LUA_OK)) {
+  if (luai_unlikely(loadfilex(L, fname, "t") != LUA_OK)) {
     return lua_error(L);
 	}
   lua_callk(L, 0, LUA_MULTRET, 0, dofilecont);
@@ -205,6 +210,7 @@ int protected (lua_State* L) {
 	lua_setglobal(L, "dofile");
 	lua_pushcfunction(L, luaC_getfixed);
 	lua_setglobal(L, "getfixed");
+	lua_setpolicy(L, LUAPOLICY_REGISTRY | LUAPOLICY_BYTECODE | LUAPOLICY_CONTROLGC | LUAPOLICY_CANRUNGC | LUAPOLICY_FILESYSTEM | LUAPOLICY_EXTRADEBUG | LUAPOLICY_POLICYCTL);
 	return 0;
 }
 

@@ -13,6 +13,7 @@ OnlyLua - minified and modified 5.4 lua, only luaCore and minified base librarie
 - typenames are GCFIXED now
 - `void lua_pushobjtype(lua_State* L, int idx)` returns it to the stack without expensive string table lookups.
 7. Some CAPI/lua baselib useful but not very compatible changes
+8. Policy system *see luapolicy.h*
 
 ## warning
 this project is still in development. If you have some issues - please send them to the `issues` on the GitHub page with this repository : [link](https://github.com/UtoECat/onlylua)
@@ -48,7 +49,7 @@ see `lextensions.c` file for them.
 - *TODO* test custom extensions a bit more...
 - **ISSUE** this packed lua version is not very `c++-compat`. Some fixes are required.
 - **TODO** remove locale and stdio dependency!
-- **TODO** policy system implementation
+- **TODO** Add police system checks in libs
 - **TODO** fix copyrights, optimize some libraries code
 - **TODO** Implement custom internal block allocator for GC objects
 

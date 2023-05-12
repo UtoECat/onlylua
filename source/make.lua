@@ -199,6 +199,7 @@ end
 buf[1] = incfile("lua.h")
 buf[#buf + 1] = incfile("lualib.h")
 buf[#buf + 1] = incfile("lauxlib.h")
+buf[#buf + 1] = incfile("luapolicy.h")
 
 -- pack and write :D
 --donefile('../lua.h', "/*\n".. COPYRIGHT .."\n*/")

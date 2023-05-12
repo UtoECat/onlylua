@@ -153,4 +153,7 @@ collectgarbage();
 print("Memory usage after FULL GC : ", collectgarbage("count") * 1024)
 print("Test require")
 require "bench"
+print("Test security")
+local s, err = pcall(collectgarbage, "stop")
+print(err)
 print("End!")
