@@ -1,3 +1,10 @@
+## WARNINING
+this project is deprecated and not supported naymore.
+At some day, i found [Luau](https://github.com/Roblox/luau) project, and understood that everything i was thinking about is already done there in much better way :(
+Btw, soon i will release **minified luau** project, that will be easier to build and include in other C++ projects. (i am not sure if it's gonna be headerobly).
+Luau have similar portablilty that vanilla lua has, also has security things, no IO, SYSTEM and other libs, etc., etc.
+At least give it a try.
+
 # OnlyLua
 OnlyLua - minified and modified 5.4 lua, only luaCore and minified base libraries.
 # Features :
